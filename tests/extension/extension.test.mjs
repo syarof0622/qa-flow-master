@@ -734,3 +734,24 @@ test('governance sign-off opens from the extracted module', async () => {
     assert.equal(await sidepanel.locator('#qaWorkspaceBody select[name="approved"] option').count() >= 2, true, 'Decision select populated');
   } finally { await context.close(); }
 });
+
+test('IP geolocation modal opens from the extracted module', async () => {
+  const extensionPath = path.resolve('.');
+  const context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+  try {
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+
+    await sidepanel.locator('#tab-btn-reports').click();
+    await sidepanel.locator('#btnQaGovernanceMenu').click();
+    await sidepanel.locator('#btnCheckIpInfo').click();
+    // The extracted module must open the IP modal.
+    await sidepanel.locator('#bentoIpModal:not(.hidden)').waitFor({ timeout: 10000 });
+    // Close via the module's close button.
+    await sidepanel.locator('#btnCloseIpModal').click();
+    await sidepanel.locator('#bentoIpModal').waitFor({ state: 'hidden', timeout: 10000 });
+  } finally { await context.close(); }
+});
