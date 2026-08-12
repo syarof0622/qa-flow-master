@@ -5,11 +5,11 @@
 function qaHandleMessage(action, payload, sender, sendResponse) {
   switch (action) {
     case 'SAVE_VIDEO_SETTINGS':
-      appState.videoSettings = {
+      qaState.settings.setVideo({
         autoRecord: !!payload?.autoRecord,
         uploadUrl: payload?.uploadUrl || '',
         apiKey: payload?.apiKey || ''
-      };
+      });
       saveState();
       broadcastStateUpdate();
       sendResponse({ status: 'SUCCESS' });
@@ -26,27 +26,25 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
           apiKey: payload?.apiKey || ''
         }
       });
-      appState.aiSettings = {
+      qaState.settings.setAi({
         provider: payload?.provider || 'deepseek',
         model: payload?.model || 'deepseek-chat',
         apiKey: ''
-      };
+      });
       saveState();
       broadcastStateUpdate();
       sendResponse({ status: 'SUCCESS' });
       break;
       
     case 'ADD_VIDEO_HISTORY':
-      if (!appState.videoHistory) appState.videoHistory = [];
-      appState.videoHistory.unshift(payload.entry);
-      if (appState.videoHistory.length > 50) appState.videoHistory.pop();
+      qaState.video.push(payload.entry);
       saveState();
       broadcastStateUpdate();
       sendResponse({ status: 'SUCCESS' });
       break;
 
     case 'GET_STATE':
-      sendResponse({ status: 'SUCCESS', data: appState });
+      sendResponse({ status: 'SUCCESS', data: getAppState() });
       break;
 
     case 'CAPTURE_REPORT_SCREENSHOT':
@@ -58,84 +56,63 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
     // --- SUITE MANAGEMENT (P0) ---
     case 'CREATE_SUITE': {
       const newSuite = createSuiteObject(payload.name, payload.tags || []);
-      appState.suites.push(newSuite);
-      appState.activeSuiteId = newSuite.id;
-      appState.executionResults = {};
+      qaState.suites.add(newSuite);
       saveState();
-      broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: appState.suites, activeSuiteId: appState.activeSuiteId, results: {} });
+      broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: qaState.suites.all(), activeSuiteId: qaState.suites.activeId(), results: {} });
       sendResponse({ status: 'SUCCESS', suite: newSuite });
       break;
     }
 
     case 'SWITCH_SUITE': {
-      const target = appState.suites.find(s => s.id === payload.suiteId);
+      const target = qaState.suites.get(payload.suiteId);
       if (target) {
-        appState.activeSuiteId = payload.suiteId;
-        appState.executionResults = {};
+        qaState.suites.setActive(payload.suiteId);
         saveState();
-        broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: appState.suites, activeSuiteId: appState.activeSuiteId, results: {} });
+        broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: qaState.suites.all(), activeSuiteId: qaState.suites.activeId(), results: {} });
       }
       sendResponse({ status: 'SUCCESS' });
       break;
     }
 
     case 'RENAME_SUITE': {
-      const suite = appState.suites.find(s => s.id === payload.suiteId);
-      if (suite) {
-        suite.name = payload.name;
-        suite.updatedAt = new Date().toISOString();
-        saveState();
-        broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: appState.suites, activeSuiteId: appState.activeSuiteId });
-      }
+      const suite = qaState.suites.update(payload.suiteId, { name: payload.name });
+      saveState();
+      if (suite) broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: qaState.suites.all(), activeSuiteId: qaState.suites.activeId() });
       sendResponse({ status: 'SUCCESS' });
       break;
     }
 
     case 'DUPLICATE_SUITE': {
-      const src = appState.suites.find(s => s.id === payload.suiteId);
+      const src = qaState.suites.get(payload.suiteId);
       if (src) {
         const dup = createSuiteObject(src.name + ' (Salinan)', [...src.tags]);
         dup.steps = JSON.parse(JSON.stringify(src.steps));
-        appState.suites.push(dup);
-        appState.activeSuiteId = dup.id;
-        appState.executionResults = {};
+        qaState.suites.add(dup);
         saveState();
-        broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: appState.suites, activeSuiteId: appState.activeSuiteId, results: {} });
+        broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: qaState.suites.all(), activeSuiteId: qaState.suites.activeId(), results: {} });
       }
       sendResponse({ status: 'SUCCESS' });
       break;
     }
 
     case 'DELETE_SUITE': {
-      appState.suites = appState.suites.filter(s => s.id !== payload.suiteId);
-      if (!appState.suites.length) {
-        const def = createSuiteObject('Proyek QA Default');
-        appState.suites.push(def);
-        appState.activeSuiteId = def.id;
-      } else if (appState.activeSuiteId === payload.suiteId) {
-        appState.activeSuiteId = appState.suites[0].id;
-      }
-      appState.executionResults = {};
+      qaState.suites.remove(payload.suiteId);
       saveState();
-      broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: appState.suites, activeSuiteId: appState.activeSuiteId, results: {} });
+      broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: qaState.suites.all(), activeSuiteId: qaState.suites.activeId(), results: {} });
       sendResponse({ status: 'SUCCESS' });
       break;
     }
 
     case 'UPDATE_SUITE_TAGS': {
-      const s = appState.suites.find(s => s.id === payload.suiteId);
-      if (s) {
-        s.tags = payload.tags;
-        s.updatedAt = new Date().toISOString();
-        saveState();
-        broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: appState.suites, activeSuiteId: appState.activeSuiteId });
-      }
+      const s = qaState.suites.update(payload.suiteId, { tags: payload.tags });
+      saveState();
+      if (s) broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: qaState.suites.all(), activeSuiteId: qaState.suites.activeId() });
       sendResponse({ status: 'SUCCESS' });
       break;
     }
 
     case 'UPDATE_SUITE_METADATA': {
-      const suite = appState.suites.find(item => item.id === payload.suiteId);
+      const suite = qaState.suites.get(payload.suiteId);
       if (suite) {
         const metadata = payload.metadata || {};
         suite.owner = String(metadata.owner || '').slice(0, 120);
@@ -146,7 +123,7 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
         suite.requirements = Array.isArray(metadata.requirements) ? metadata.requirements.slice(0, 500).map(item => ({ id: String(item?.id || '').slice(0, 120), title: String(item?.title || '').slice(0, 300), risk: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(item?.risk) ? item.risk : 'MEDIUM' })).filter(item => item.id) : (suite.requirements || []);
         suite.updatedAt = new Date().toISOString();
         saveState();
-        broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: appState.suites, activeSuiteId: appState.activeSuiteId });
+        broadcastToSidepanel({ action: 'SUITES_UPDATED', suites: qaState.suites.all(), activeSuiteId: qaState.suites.activeId() });
       }
       sendResponse({ status: suite ? 'SUCCESS' : 'ERROR' });
       break;
@@ -181,19 +158,18 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
           baseUrl: String(importedEnvironment.baseUrl || '').slice(0, 2000),
           variables: importedEnvironment.variables && typeof importedEnvironment.variables === 'object' ? importedEnvironment.variables : {}
         };
-        appState.environments.push(environment);
+        qaState.data.environments().push(environment);
         appState.activeEnvironmentId = environment.id;
       }
       const importedDataset = payload.document.dataset;
       if (importedDataset && Array.isArray(importedDataset.rows) && importedDataset.rows.length) {
         const dataset = { id: `dataset_${Date.now()}`, name: String(importedDataset.name || 'Imported').slice(0, 80), rows: importedDataset.rows.slice(0, 1000) };
-        appState.datasets.push(dataset);
-        appState.activeDatasetId = dataset.id;
-        appState.activeDatasetRow = 0;
+        qaState.data.datasets().push(dataset);
+        qaState.data.setActiveDataset(dataset.id, 0);
       }
-      if (Array.isArray(payload.document.defects)) appState.defects.push(...payload.document.defects.slice(0, 1000).map(item => ({ ...item, suiteId: targetSuite.id })));
-      if (Array.isArray(payload.document.exploratorySessions)) appState.exploratorySessions.push(...payload.document.exploratorySessions.slice(0, 1000).map(item => ({ ...item, suiteId: targetSuite.id })));
-      if (Array.isArray(payload.document.releaseSignoffs)) appState.releaseSignoffs.push(...payload.document.releaseSignoffs.slice(0, 1000).map(item => ({ ...item, suiteId: targetSuite.id })));
+      if (Array.isArray(payload.document.defects)) qaState.qa.defects().push(...payload.document.defects.slice(0, 1000).map(item => ({ ...item, suiteId: targetSuite.id })));
+      if (Array.isArray(payload.document.exploratorySessions)) qaState.qa.exploratorySessions().push(...payload.document.exploratorySessions.slice(0, 1000).map(item => ({ ...item, suiteId: targetSuite.id })));
+      if (Array.isArray(payload.document.releaseSignoffs)) qaState.qa.releaseSignoffs().push(...payload.document.releaseSignoffs.slice(0, 1000).map(item => ({ ...item, suiteId: targetSuite.id })));
       appState.executionResults = {};
       saveState();
       broadcastStateUpdate();
@@ -214,14 +190,14 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
           if (response?.status !== 'SUCCESS') await new Promise(resolve => setTimeout(resolve, 200));
         }
         if (response?.status !== 'SUCCESS' || !response.isRecording) throw new Error('Recorder tidak merespons. Muat ulang halaman target.');
-        appState.isRecording = true;
-        appState.activeTabId = tabId;
+        qaState.recording.setRecording(true);
+        qaState.recording.setActiveTab(tabId);
         const activeSuite = getActiveSuite();
         recordingSession = { id: `recording_${Date.now()}`, suiteId: activeSuite?.id || '', startIndex: activeSuite?.steps?.length || 0, startedAt: new Date().toISOString(), tabId };
         broadcastStateUpdate();
         sendResponse({ status: 'SUCCESS', tabId });
       })().catch(error => {
-        appState.isRecording = false;
+        qaState.recording.setRecording(false);
         broadcastStateUpdate();
         sendResponse({ status: 'ERROR', error: error.message });
       });
@@ -229,12 +205,12 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
 
     case 'STOP_RECORDING':
       (async () => {
-        const tabId = appState.activeTabId;
+        const tabId = qaState.recording.activeTabId();
         if (tabId) await sendCommandToAllFrames(tabId, { action: 'TOGGLE_RECORDING', isRecording: false }).catch(() => null);
-        appState.isRecording = false;
-        appState.activeTabId = null;
+        qaState.recording.setRecording(false);
+        qaState.recording.setActiveTab(null);
         if (tabId) await disableMonitor(tabId).catch(() => null);
-        appState.monitorStatus = { active: false, tabId, checkedAt: new Date().toISOString(), error: null };
+        qaState.recording.setMonitorStatus({ active: false, tabId, checkedAt: new Date().toISOString(), error: null });
         broadcastStateUpdate();
         const activeSuite = getActiveSuite();
         const endIndex = Math.max(-1, (activeSuite?.steps?.length || 0) - 1);
@@ -245,7 +221,7 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
       return true;
 
     case 'RECORDED_STEP': {
-      if (appState.isRecording) {
+      if (qaState.recording.isRecording()) {
         const activeSuite = getActiveSuite();
         if (activeSuite) {
           const normalizedStep = normalizeStep({ ...payload, frame: { ...(payload.frame || {}), frameId: sender.frameId || 0, isTop: (sender.frameId || 0) === 0 } });
@@ -275,10 +251,11 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
 
     case 'UPSERT_DEFECT': {
       const defect = payload?.defect || {};
-      const normalized = { id: String(defect.id || `BUG-${Date.now()}`).slice(0, 120), suiteId: String(defect.suiteId || appState.activeSuiteId || ''), requirementIds: Array.isArray(defect.requirementIds) ? defect.requirementIds.map(String).slice(0, 30) : [], title: String(defect.title || 'Untitled defect').slice(0, 300), severity: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(defect.severity) ? defect.severity : 'MEDIUM', status: ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'WONT_FIX'].includes(defect.status) ? defect.status : 'OPEN', assignee: String(defect.assignee || '').slice(0, 120), evidence: Array.isArray(defect.evidence) ? defect.evidence.map(String).slice(0, 20) : [], updatedAt: new Date().toISOString(), createdAt: defect.createdAt || new Date().toISOString() };
-      const defectIndex = appState.defects.findIndex(item => item.id === normalized.id);
-      if (defectIndex >= 0) appState.defects[defectIndex] = normalized;
-      else appState.defects.unshift(normalized);
+      const normalized = { id: String(defect.id || `BUG-${Date.now()}`).slice(0, 120), suiteId: String(defect.suiteId || qaState.suites.activeId() || ''), requirementIds: Array.isArray(defect.requirementIds) ? defect.requirementIds.map(String).slice(0, 30) : [], title: String(defect.title || 'Untitled defect').slice(0, 300), severity: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(defect.severity) ? defect.severity : 'MEDIUM', status: ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'WONT_FIX'].includes(defect.status) ? defect.status : 'OPEN', assignee: String(defect.assignee || '').slice(0, 120), evidence: Array.isArray(defect.evidence) ? defect.evidence.map(String).slice(0, 20) : [], updatedAt: new Date().toISOString(), createdAt: defect.createdAt || new Date().toISOString() };
+      const defects = qaState.qa.defects();
+      const defectIndex = defects.findIndex(item => item.id === normalized.id);
+      if (defectIndex >= 0) defects[defectIndex] = normalized;
+      else defects.unshift(normalized);
       broadcastStateUpdate();
       sendResponse({ status: 'SUCCESS', defect: normalized });
       break;
@@ -286,10 +263,11 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
 
     case 'ADD_EXPLORATORY_SESSION': {
       const session = payload?.session || {};
-      const normalized = { id: String(session.id || `SESSION-${Date.now()}`).slice(0, 120), suiteId: String(session.suiteId || appState.activeSuiteId || ''), charter: String(session.charter || '').slice(0, 1000), tester: String(session.tester || '').slice(0, 120), durationMinutes: Math.max(1, Math.min(1440, Number(session.durationMinutes) || 30)), notes: String(session.notes || '').slice(0, 5000), evidence: Array.isArray(session.evidence) ? session.evidence.map(String).slice(0, 20) : [], createdAt: new Date().toISOString() };
+      const normalized = { id: String(session.id || `SESSION-${Date.now()}`).slice(0, 120), suiteId: String(session.suiteId || qaState.suites.activeId() || ''), charter: String(session.charter || '').slice(0, 1000), tester: String(session.tester || '').slice(0, 120), durationMinutes: Math.max(1, Math.min(1440, Number(session.durationMinutes) || 30)), notes: String(session.notes || '').slice(0, 5000), evidence: Array.isArray(session.evidence) ? session.evidence.map(String).slice(0, 20) : [], createdAt: new Date().toISOString() };
       if (!normalized.charter) { sendResponse({ status: 'ERROR', error: 'Charter wajib diisi.' }); break; }
-      appState.exploratorySessions.unshift(normalized);
-      appState.exploratorySessions = appState.exploratorySessions.slice(0, 100);
+      const sessions = qaState.qa.exploratorySessions();
+      sessions.unshift(normalized);
+      if (sessions.length > 100) sessions.length = 100;
       broadcastStateUpdate();
       sendResponse({ status: 'SUCCESS', session: normalized });
       break;
@@ -301,9 +279,9 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
       const requirements = activeSuite?.requirements || [];
       const coveredIds = new Set((activeSuite?.steps || []).flatMap(step => step.requirementIds || []));
       const coverage = requirements.length ? Math.round(requirements.filter(item => coveredIds.has(item.id)).length / requirements.length * 100) : 0;
-      const blockers = appState.defects.filter(item => item.suiteId === activeSuite?.id && ['OPEN', 'IN_PROGRESS'].includes(item.status) && ['CRITICAL', 'HIGH'].includes(item.severity));
-      const lastRun = appState.executionHistory.find(item => item.suiteId === activeSuite?.id);
-      const suiteRuns = appState.executionHistory.filter(item => item.suiteId === activeSuite?.id);
+      const blockers = qaState.qa.defects().filter(item => item.suiteId === activeSuite?.id && ['OPEN', 'IN_PROGRESS'].includes(item.status) && ['CRITICAL', 'HIGH'].includes(item.severity));
+      const lastRun = qaState.execution.history().find(item => item.suiteId === activeSuite?.id);
+      const suiteRuns = qaState.execution.history().filter(item => item.suiteId === activeSuite?.id);
       const byStep = new Map();
       suiteRuns.flatMap(item => item.stepOutcomes || []).forEach(outcome => {
         const states = byStep.get(outcome.stepId) || new Set();
@@ -311,52 +289,33 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
         byStep.set(outcome.stepId, states);
       });
       const flakyCount = [...byStep.values()].filter(states => states.has('FAILED') && [...states].some(state => state !== 'FAILED')).length;
-      const criticalRuntimeIssues = appState.logs.filter(log => log.severity === 'CRITICAL' || (log.type === 'network_error' && Number(log.details?.status || 0) >= 500)).length;
+      const criticalRuntimeIssues = qaState.logs.all().filter(log => log.severity === 'CRITICAL' || (log.type === 'network_error' && Number(log.details?.status || 0) >= 500)).length;
       const gates = { passingRun: lastRun?.status === 'COMPLETED' && !lastRun.failedSteps, coverage, blockerCount: blockers.length, flakyCount, slowCount: Number(lastRun?.slowSteps || 0), criticalRuntimeIssues };
       const gateFailed = !gates.passingRun || coverage < (Number(request.minimumCoverage) || 80) || blockers.length > 0 || flakyCount > (Number(request.maximumFlaky) || 0) || gates.slowCount > (Number(request.maximumSlow) || 0) || (request.requireCleanRuntime !== false && criticalRuntimeIssues > 0);
       if (request.approved && gateFailed && !String(request.overrideReason || '').trim()) { sendResponse({ status: 'ERROR', error: 'Quality gate gagal. Isi overrideReason untuk pengecualian yang dapat diaudit.', gates }); break; }
       const signoff = { id: `SIGNOFF-${Date.now()}`, suiteId: activeSuite?.id || '', release: String(request.release || activeSuite?.release || '').slice(0, 120), approver: String(request.approver || '').slice(0, 120), approved: Boolean(request.approved), thresholds: { minimumCoverage: Number(request.minimumCoverage) || 80, maximumFlaky: Number(request.maximumFlaky) || 0, maximumSlow: Number(request.maximumSlow) || 0, requireCleanRuntime: request.requireCleanRuntime !== false }, gates, overrideReason: String(request.overrideReason || '').slice(0, 1000), createdAt: new Date().toISOString() };
-      appState.releaseSignoffs.unshift(signoff);
-      appState.releaseSignoffs = appState.releaseSignoffs.slice(0, 100);
+      const signoffs = qaState.qa.releaseSignoffs();
+      signoffs.unshift(signoff);
+      if (signoffs.length > 100) signoffs.length = 100;
       broadcastStateUpdate();
       sendResponse({ status: 'SUCCESS', signoff });
       break;
     }
 
     case 'UPDATE_STEPS': {
-      const activeSuite = getActiveSuite();
-      if (activeSuite) {
-        activeSuite.steps = (payload.steps || []).map(normalizeStep);
-        activeSuite.updatedAt = new Date().toISOString();
-        saveState();
-        broadcastToSidepanel({ action: 'STEPS_UPDATED', allSteps: activeSuite.steps });
-      }
+      qaState.suites.setSteps(payload.steps || []);
       sendResponse({ status: 'SUCCESS' });
       break;
     }
 
     case 'APPEND_STEPS': {
-      const activeSuite = getActiveSuite();
-      if (activeSuite) {
-        const newSteps = (payload.steps || []).map(normalizeStep);
-        activeSuite.steps = [...activeSuite.steps, ...newSteps];
-        activeSuite.updatedAt = new Date().toISOString();
-        saveState();
-        broadcastToSidepanel({ action: 'STEPS_UPDATED', allSteps: activeSuite.steps });
-      }
-      sendResponse({ status: 'SUCCESS', data: appState });
+      qaState.suites.appendSteps(payload.steps || []);
+      sendResponse({ status: 'SUCCESS', data: getAppState() });
       break;
     }
 
     case 'CLEAR_STEPS': {
-      const activeSuite = getActiveSuite();
-      if (activeSuite) {
-        activeSuite.steps = [];
-        activeSuite.updatedAt = new Date().toISOString();
-        appState.executionResults = {};
-        saveState();
-        broadcastToSidepanel({ action: 'STEPS_UPDATED', allSteps: [], results: {} });
-      }
+      qaState.suites.clearSteps();
       sendResponse({ status: 'SUCCESS' });
       break;
     }
@@ -373,7 +332,8 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
         url: sender.tab?.url || payload.url || 'Unknown'
       };
       // Smart dedup: jika pesan identik sudah ada dalam 5 detik terakhir, increment counter
-      const recent = appState.logs.find(l =>
+      const logs = qaState.logs.all();
+      const recent = logs.find(l =>
         l.message === logItem.message &&
         l.type === logItem.type &&
         (new Date(logItem.timestamp) - new Date(l.timestamp)) < 5000
@@ -383,10 +343,10 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
         recent.timestamp = logItem.timestamp;
       } else {
         logItem.count = 1;
-        appState.logs.unshift(logItem);
+        qaState.logs.push(logItem);
       }
-      if (appState.logs.length > 300) appState.logs.pop();
-      if (appState.isRecording && recordingSession && ['network_request', 'network_error', 'network_slow'].includes(logItem.type)) {
+      if (qaState.logs.all().length > 300) qaState.logs.all().pop();
+      if (qaState.recording.isRecording() && recordingSession && ['network_request', 'network_error', 'network_slow'].includes(logItem.type)) {
         const suite = getActiveSuite();
         const lastStep = suite?.steps?.at(-1);
         const age = lastStep ? Date.now() - new Date(lastStep.timestamp || 0).getTime() : Infinity;
@@ -398,20 +358,20 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
         }
       }
       saveState();
-      broadcastToSidepanel({ action: 'NEW_LOG', log: recent || logItem, replaceExisting: Boolean(recent), totalLogs: appState.logs.length });
+      broadcastToSidepanel({ action: 'NEW_LOG', log: recent || logItem, replaceExisting: Boolean(recent), totalLogs: qaState.logs.all().length });
       sendResponse({ status: 'SUCCESS' });
       break;
     }
 
     case 'MONITOR_STATUS':
-      appState.monitorStatus = { active: Boolean(payload?.active), tabId: sender.tab?.id || null, checkedAt: new Date().toISOString(), error: payload?.error || null };
+      qaState.recording.setMonitorStatus({ active: Boolean(payload?.active), tabId: sender.tab?.id || null, checkedAt: new Date().toISOString(), error: payload?.error || null });
       saveState();
-      broadcastToSidepanel({ action: 'MONITOR_STATUS_CHANGED', monitorStatus: appState.monitorStatus });
+      broadcastToSidepanel({ action: 'MONITOR_STATUS_CHANGED', monitorStatus: qaState.recording.monitorStatus() });
       sendResponse({ status: 'SUCCESS' });
       break;
 
     case 'CLEAR_LOGS':
-      appState.logs = [];
+      qaState.logs.clear();
       saveState();
       broadcastToSidepanel({ action: 'LOGS_CLEARED' });
       sendResponse({ status: 'SUCCESS' });
@@ -436,21 +396,20 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
       return true;
 
     case 'PAUSE_EXECUTION':
-      if (appState.executionResults.status !== 'RUNNING') { sendResponse({ status: 'ERROR', error: 'Tidak ada eksekusi aktif.' }); break; }
-      executionControl.paused = true;
+      if (qaState.execution.results().status !== 'RUNNING') { sendResponse({ status: 'ERROR', error: 'Tidak ada eksekusi aktif.' }); break; }
+      qaState.execution.setControl({ ...qaState.execution.control(), paused: true });
       broadcastToSidepanel({ action: 'EXECUTION_CONTROL_CHANGED', control: { paused: true, cancelled: false } });
       sendResponse({ status: 'SUCCESS', paused: true });
       break;
 
     case 'RESUME_EXECUTION':
-      executionControl.paused = false;
+      qaState.execution.setControl({ ...qaState.execution.control(), paused: false });
       broadcastToSidepanel({ action: 'EXECUTION_CONTROL_CHANGED', control: { paused: false, cancelled: false } });
       sendResponse({ status: 'SUCCESS', paused: false });
       break;
 
     case 'STOP_EXECUTION':
-      executionControl.cancelled = true;
-      executionControl.paused = false;
+      qaState.execution.setControl({ runId: qaState.execution.control().runId, paused: false, cancelled: true });
       broadcastToSidepanel({ action: 'EXECUTION_CONTROL_CHANGED', control: { paused: false, cancelled: true } });
       sendResponse({ status: 'SUCCESS', cancelled: true });
       break;
@@ -459,21 +418,22 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
       const stepId = String(payload?.stepId || '');
       const candidate = String(payload?.candidate || '');
       if (!stepId || !candidate.startsWith('data:image/')) { sendResponse({ status: 'ERROR', error: 'Baseline candidate tidak valid.' }); break; }
-      appState.visualBaselines[stepId] = candidate;
-      pushAuditEntry({ action: 'APPROVE_VISUAL_BASELINE', suiteId: appState.activeSuiteId, stepId });
+      qaState.qa.setVisualBaseline(stepId, candidate);
+      pushAuditEntry({ action: 'APPROVE_VISUAL_BASELINE', suiteId: qaState.suites.activeId(), stepId });
       saveState();
       sendResponse({ status: 'SUCCESS' });
       break;
     }
 
     case 'RESTORE_SUITE_REVISION': {
-      const revision = appState.suiteRevisions.find(item => item.id === payload?.revisionId && item.suiteId === appState.activeSuiteId);
-      const suiteIndex = appState.suites.findIndex(item => item.id === appState.activeSuiteId);
+      const revisions = qaState.suites.revisions();
+      const revision = revisions.find(item => item.id === payload?.revisionId && item.suiteId === qaState.suites.activeId());
+      const suiteIndex = qaState.suites.all().findIndex(item => item.id === qaState.suites.activeId());
       if (!revision || suiteIndex < 0) { sendResponse({ status: 'ERROR', error: 'Revision tidak ditemukan.' }); break; }
-      const currentSuite = appState.suites[suiteIndex];
-      appState.suiteRevisions.unshift({ id: `rev_${Date.now()}`, reason: 'BEFORE_RESTORE', suiteId: currentSuite.id, timestamp: new Date().toISOString(), suite: JSON.parse(JSON.stringify(currentSuite)) });
-      appState.suites[suiteIndex] = { ...JSON.parse(JSON.stringify(revision.suite)), id: currentSuite.id, steps: (revision.suite.steps || []).map(normalizeStep), updatedAt: new Date().toISOString() };
-      appState.suiteRevisions = appState.suiteRevisions.slice(0, 25);
+      const currentSuite = qaState.suites.all()[suiteIndex];
+      revisions.unshift({ id: `rev_${Date.now()}`, reason: 'BEFORE_RESTORE', suiteId: currentSuite.id, timestamp: new Date().toISOString(), suite: JSON.parse(JSON.stringify(currentSuite)) });
+      qaState.suites.all()[suiteIndex] = { ...JSON.parse(JSON.stringify(revision.suite)), id: currentSuite.id, steps: (revision.suite.steps || []).map(normalizeStep), updatedAt: new Date().toISOString() };
+      if (revisions.length > 25) revisions.length = 25;
       pushAuditEntry({ action: 'RESTORE_SUITE_REVISION', suiteId: currentSuite.id, revisionId: revision.id });
       saveState();
       broadcastStateUpdate();
@@ -486,19 +446,22 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
       let validated;
       try { validated = validateWorkspaceBackup(backup); } catch (error) { sendResponse({ status: 'ERROR', error: error.message }); break; }
       const suites = validated.suites;
-      appState.suites = suites;
+      qaState.suites.all().length = 0;
+      qaState.suites.all().push(...suites);
       appState.activeSuiteId = suites.some(item => item.id === backup.activeSuiteId) ? backup.activeSuiteId : suites[0].id;
-      appState.environments = validated.environments.length ? validated.environments : appState.environments;
-      appState.datasets = validated.datasets;
-      appState.defects = validated.defects;
+      qaState.data.environments().length = 0;
+      qaState.data.environments().push(...(validated.environments.length ? validated.environments : appState.environments));
+      qaState.data.datasets().length = 0;
+      qaState.data.datasets().push(...validated.datasets);
+      qaState.qa.setDefects(validated.defects);
       appState.exploratorySessions = validated.exploratorySessions;
       appState.releaseSignoffs = validated.releaseSignoffs;
-      const priorChainTail = appState.auditTrail.length ? appState.auditTrail[appState.auditTrail.length - 1].hash : null;
-      appState.suiteRevisions = [];
+      const priorChainTail = qaState.qa.auditTrail().length ? qaState.qa.auditTrail()[qaState.qa.auditTrail().length - 1].hash : null;
+      qaState.suites.revisions().length = 0;
       appState.auditTrail = [];
       appState.visualBaselines = validated.visualBaselines;
       appState.executionResults = { status: 'IDLE', totalSteps: 0, passedSteps: 0, failedSteps: 0, stepDetails: [] };
-      pushAuditEntry({ action: 'RESTORE_WORKSPACE_BACKUP', suiteId: appState.activeSuiteId, priorChainTail });
+      pushAuditEntry({ action: 'RESTORE_WORKSPACE_BACKUP', suiteId: qaState.suites.activeId(), priorChainTail });
       saveState();
       broadcastStateUpdate();
       sendResponse({ status: 'SUCCESS', suiteCount: suites.length });
@@ -506,10 +469,8 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
     }
 
     case 'SET_ACTIVE_ENVIRONMENT':
-      if (appState.environments.some(env => env.id === payload.id)) {
-        appState.activeEnvironmentId = payload.id;
-        saveState();
-      }
+      qaState.data.setActiveEnvironment(payload.id);
+      saveState();
       sendResponse({ status: 'SUCCESS' });
       break;
 
@@ -520,10 +481,7 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
         baseUrl: String(payload.environment?.baseUrl || '').slice(0, 2000),
         variables: payload.environment?.variables && typeof payload.environment.variables === 'object' ? payload.environment.variables : {}
       };
-      const existingIndex = appState.environments.findIndex(env => env.id === environment.id);
-      if (existingIndex >= 0) appState.environments[existingIndex] = environment;
-      else appState.environments.push(environment);
-      appState.activeEnvironmentId = environment.id;
+      qaState.data.saveEnvironment(environment);
       saveState();
       broadcastStateUpdate();
       sendResponse({ status: 'SUCCESS', environment });
@@ -531,58 +489,48 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
     }
 
     case 'SET_SESSION_SECRETS':
-      appState.sessionSecrets = payload?.secrets && typeof payload.secrets === 'object' ? { ...payload.secrets } : {};
-      sessionSecrets = { ...appState.sessionSecrets };
+      qaState.settings.setSecrets(payload?.secrets && typeof payload.secrets === 'object' ? { ...payload.secrets } : {});
       saveState();
       sendResponse({ status: 'SUCCESS', count: Object.keys(sessionSecrets).length });
       break;
 
     case 'SAVE_RUN_OPTIONS':
-      appState.runOptions = {
+      qaState.settings.setRunOptions({
         stopOnError: payload?.stopOnError !== false,
         stepDelay: Math.max(0, parseInt(payload?.stepDelay, 10) || 500),
         autoRetryCount: Math.max(0, parseInt(payload?.autoRetryCount, 10) || 2)
-      };
+      });
       saveState();
-      sendResponse({ status: 'SUCCESS', runOptions: appState.runOptions });
+      sendResponse({ status: 'SUCCESS', runOptions: qaState.settings.runOptions() });
       break;
 
     case 'SET_MONITOR_OPTIONS':
-      appState.monitorOptions = { captureBodies: payload?.captureBodies === true };
+      qaState.recording.setMonitorOptions({ captureBodies: payload?.captureBodies === true });
       saveState();
-      sendResponse({ status: 'SUCCESS', options: appState.monitorOptions });
+      sendResponse({ status: 'SUCCESS', options: qaState.recording.monitorOptions() });
       break;
 
     case 'SAVE_COPILOT_THREAD': {
-      if (!Array.isArray(appState.copilotThreads)) appState.copilotThreads = [];
       const thread = payload.thread;
       if (thread && thread.id) {
-        const idx = appState.copilotThreads.findIndex(t => t.id === thread.id);
-        if (idx >= 0) appState.copilotThreads[idx] = thread;
-        else appState.copilotThreads.unshift(thread);
-        appState.activeCopilotThreadId = thread.id;
+        qaState.copilot.saveThread(thread);
         saveState();
         broadcastStateUpdate();
       }
-      sendResponse({ status: 'SUCCESS', threads: appState.copilotThreads });
+      sendResponse({ status: 'SUCCESS', threads: qaState.copilot.threads() });
       break;
     }
 
     case 'DELETE_COPILOT_THREAD': {
-      if (Array.isArray(appState.copilotThreads)) {
-        appState.copilotThreads = appState.copilotThreads.filter(t => t.id !== payload.threadId);
-        if (appState.activeCopilotThreadId === payload.threadId) {
-          appState.activeCopilotThreadId = appState.copilotThreads[0]?.id || null;
-        }
-        saveState();
-        broadcastStateUpdate();
-      }
-      sendResponse({ status: 'SUCCESS', threads: appState.copilotThreads });
+      qaState.copilot.deleteThread(payload.threadId);
+      saveState();
+      broadcastStateUpdate();
+      sendResponse({ status: 'SUCCESS', threads: qaState.copilot.threads() });
       break;
     }
 
     case 'SET_ACTIVE_COPILOT_THREAD': {
-      appState.activeCopilotThreadId = payload.threadId || null;
+      qaState.copilot.setActiveThreadId(payload.threadId || null);
       saveState();
       sendResponse({ status: 'SUCCESS' });
       break;
@@ -594,11 +542,7 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
         name: String(payload.dataset?.name || 'Dataset').slice(0, 80),
         rows: Array.isArray(payload.dataset?.rows) ? payload.dataset.rows.slice(0, 1000).map(row => row && typeof row === 'object' ? row : {}) : []
       };
-      const datasetIndex = appState.datasets.findIndex(item => item.id === dataset.id);
-      if (datasetIndex >= 0) appState.datasets[datasetIndex] = dataset;
-      else appState.datasets.push(dataset);
-      appState.activeDatasetId = dataset.id;
-      appState.activeDatasetRow = 0;
+      qaState.data.saveDataset(dataset);
       saveState();
       broadcastStateUpdate();
       sendResponse({ status: 'SUCCESS', dataset });
@@ -606,53 +550,39 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
     }
 
     case 'SET_ACTIVE_DATASET':
-      appState.activeDatasetId = payload?.id || null;
-      appState.activeDatasetRow = Math.max(0, parseInt(payload?.row, 10) || 0);
+      qaState.data.setActiveDataset(payload?.id || null, payload?.row);
       saveState();
       sendResponse({ status: 'SUCCESS' });
       break;
 
     case 'GET_EXECUTION_HISTORY':
-      sendResponse({ status: 'SUCCESS', history: appState.executionHistory });
+      sendResponse({ status: 'SUCCESS', history: qaState.execution.history() });
       break;
 
     case 'CLEAR_EXECUTION_HISTORY':
-      appState.executionHistory = [];
-      appState.executionResults = {
-        status: 'IDLE',
-        totalSteps: 0,
-        passedSteps: 0,
-        failedSteps: 0,
-        startTime: null,
-        endTime: null,
-        stepDetails: []
-      };
+      qaState.execution.clearHistory();
       saveState();
       broadcastStateUpdate();
       sendResponse({ status: 'SUCCESS' });
       break;
 
     case 'CLEAR_VIDEO_HISTORY':
-      appState.videoHistory = [];
+      qaState.video.clear();
       saveState();
       broadcastStateUpdate();
       sendResponse({ status: 'SUCCESS' });
       break;
 
     case 'DELETE_EXECUTION_HISTORY_ITEM':
-      if (payload?.id) {
-        appState.executionHistory = appState.executionHistory.filter(h => h.id !== payload.id);
-      } else if (typeof payload?.index === 'number') {
-        appState.executionHistory.splice(payload.index, 1);
-      }
+      qaState.execution.deleteHistoryItem(payload?.id, payload?.index);
       saveState();
-      sendResponse({ status: 'SUCCESS', history: appState.executionHistory });
+      sendResponse({ status: 'SUCCESS', history: qaState.execution.history() });
       break;
 
     case 'GET_NETWORK_STATUS':
       detectNetworkAndVPN()
         .then(netInfo => {
-          appState.networkStatus = netInfo;
+          qaState.network.setStatus(netInfo);
           saveState();
           sendResponse({ status: 'SUCCESS', networkStatus: netInfo });
         })

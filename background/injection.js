@@ -49,7 +49,7 @@ async function ensureMonitorInjected(tabId, includeBridge = false, includeMonito
           window.dispatchEvent(new CustomEvent(`__QFM_CONTROL_${token}`, { detail: { type: 'enable', captureBodies: captureBodies === true } }));
         }
       },
-      args: [appState.monitorOptions?.captureBodies === true, controlToken]
+      args: [qaState.recording.monitorOptions()?.captureBodies === true, controlToken]
     });
     await executeScriptImmediately({ target: { tabId, allFrames: true }, files: ['injected-monitor.js'], world: 'MAIN' });
   }
@@ -71,9 +71,10 @@ async function setMonitorControl(tabId, detail, frameId = null) {
 
 async function disableMonitor(tabId) {
   await setMonitorControl(tabId, { type: 'disable' });
-  appState.monitorStatus = { active: false, tabId: tabId || null, checkedAt: new Date().toISOString(), error: null };
+  const status = { active: false, tabId: tabId || null, checkedAt: new Date().toISOString(), error: null };
+  qaState.recording.setMonitorStatus(status);
   saveState();
-  broadcastToSidepanel({ action: 'MONITOR_STATUS_CHANGED', monitorStatus: appState.monitorStatus });
+  broadcastToSidepanel({ action: 'MONITOR_STATUS_CHANGED', monitorStatus: status });
 }
 
 async function executeScriptImmediately(injection) {

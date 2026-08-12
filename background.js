@@ -4,6 +4,7 @@
 //
 // Module layout (all share the worker global scope via importScripts):
 //   background/state.js      - appState, redaction, suite helpers, save/broadcast
+//   background/services.js   - qaState service layer (per-domain state API)
 //   background/cloud.js      - Supabase sync/fetch, workspace id, audit trail
 //   background/injection.js  - monitor injection, tab messaging, screenshots
 //   background/runner.js     - test-suite runner, assertions, API, secure fetch
@@ -15,6 +16,7 @@
 importScripts('shared/contracts.js');
 importScripts(
   'background/state.js',
+  'background/services.js',
   'background/cloud.js',
   'background/injection.js',
   'background/runner.js',

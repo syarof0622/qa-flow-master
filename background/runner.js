@@ -41,21 +41,20 @@ function scoreRecordedStep(step) {
 // TEST SUITE RUNNER
 // ========================================
 async function runTestSuite(tabId, delayBetweenSteps = 500, stopOnError = true, autoRetryCount = 2, scope = {}, stepsOverride = null) {
-  if (appState.executionResults.status === 'RUNNING') throw new Error('Eksekusi lain masih berjalan. Hentikan atau tunggu sampai selesai.');
-  executionControl = { runId: `run_${Date.now()}`, paused: false, cancelled: false };
+  if (qaState.execution.results().status === 'RUNNING') throw new Error('Eksekusi lain masih berjalan. Hentikan atau tunggu sampai selesai.');
+  qaState.execution.setControl({ runId: `run_${Date.now()}`, paused: false, cancelled: false });
   runtimeVariables = {};
   const waitForControl = async () => {
-    while (executionControl.paused && !executionControl.cancelled) await new Promise(resolve => setTimeout(resolve, 100));
-    return !executionControl.cancelled;
+    while (qaState.execution.control().paused && !qaState.execution.control().cancelled) await new Promise(resolve => setTimeout(resolve, 100));
+    return !qaState.execution.control().cancelled;
   };
   const finishCancelled = () => {
-    appState.executionResults.status = 'CANCELLED';
-    appState.executionResults.endTime = new Date().toISOString();
+    qaState.execution.patchResults({ status: 'CANCELLED', endTime: new Date().toISOString() });
     saveExecutionToHistory();
     saveState();
-    broadcastToSidepanel({ action: 'EXECUTION_FINISHED', results: appState.executionResults });
-    executionControl = { runId: null, paused: false, cancelled: false };
-    return appState.executionResults;
+    broadcastToSidepanel({ action: 'EXECUTION_FINISHED', results: qaState.execution.results() });
+    qaState.execution.setControl({ runId: null, paused: false, cancelled: false });
+    return qaState.execution.results();
   };
   const activeSuiteForRun = getActiveSuite();
   const expandFlows = (items, stack = []) => items.flatMap(item => {
@@ -67,7 +66,7 @@ async function runTestSuite(tabId, delayBetweenSteps = 500, stopOnError = true, 
     return expandFlows(flow, [...stack, name]);
   });
   const allSteps = expandFlows(Array.isArray(stepsOverride) ? stepsOverride : getActiveSuiteSteps());
-  const activeDataset = appState.datasets.find(dataset => dataset.id === appState.activeDatasetId);
+  const activeDataset = qaState.data.datasets().find(dataset => dataset.id === qaState.data.activeDatasetId());
   const startIndex = Math.max(0, parseInt(scope.startIndex, 10) || 0);
   const endIndex = Number.isInteger(scope.endIndex) ? Math.min(allSteps.length - 1, scope.endIndex) : allSteps.length - 1;
   const steps = allSteps.map((step, originalIndex) => ({ ...normalizeStep(step), originalIndex })).filter(step => step.enabled && step.originalIndex >= startIndex && step.originalIndex <= endIndex);
@@ -75,12 +74,12 @@ async function runTestSuite(tabId, delayBetweenSteps = 500, stopOnError = true, 
     throw new Error("Tidak ada langkah tes yang terdaftar di suite aktif.");
   }
 
-  appState.executionResults = {
+  qaState.execution.setResults({
     status: 'RUNNING',
-    suiteId: appState.activeSuiteId,
+    suiteId: qaState.suites.activeId(),
     suiteName: getActiveSuite()?.name || 'Unknown',
     datasetName: activeDataset?.name || '',
-    datasetRow: activeDataset ? appState.activeDatasetRow + 1 : null,
+    datasetRow: activeDataset ? qaState.data.activeDatasetRow() + 1 : null,
     totalSteps: steps.length,
     passedSteps: 0,
     failedSteps: 0,
@@ -88,8 +87,8 @@ async function runTestSuite(tabId, delayBetweenSteps = 500, stopOnError = true, 
     startTime: new Date().toISOString(),
     endTime: null,
     stepDetails: []
-  };
-  broadcastToSidepanel({ action: 'EXECUTION_STARTED', results: appState.executionResults });
+  });
+  broadcastToSidepanel({ action: 'EXECUTION_STARTED', results: qaState.execution.results() });
 
   for (let i = 0; i < steps.length; i++) {
     if (!await waitForControl()) return finishCancelled();
@@ -99,7 +98,7 @@ async function runTestSuite(tabId, delayBetweenSteps = 500, stopOnError = true, 
 
     broadcastToSidepanel({ action: 'STEP_EXECUTION_START', stepIndex, sequenceIndex: i + 1, totalSteps: steps.length, step });
     if (step.breakpoint) {
-      executionControl.paused = true;
+      qaState.execution.setControl({ ...qaState.execution.control(), paused: true, reason: 'breakpoint', stepIndex });
       broadcastToSidepanel({ action: 'EXECUTION_CONTROL_CHANGED', control: { paused: true, cancelled: false, reason: 'breakpoint', stepIndex } });
       if (!await waitForControl()) return finishCancelled();
     }
@@ -139,7 +138,7 @@ async function runTestSuite(tabId, delayBetweenSteps = 500, stopOnError = true, 
       const isSlow = (stepResult.duration || 0) > (step.performanceThreshold || 3000);
 
       const stepEndedAt = new Date().toISOString();
-      const evidenceLogs = appState.logs.filter(log => log.timestamp >= stepStartedAt && log.timestamp <= stepEndedAt).slice(0, 25).map(log => ({ id: log.id, timestamp: log.timestamp, type: log.type, severity: log.severity, message: log.message, details: log.details }));
+      const evidenceLogs = qaState.logs.all().filter(log => log.timestamp >= stepStartedAt && log.timestamp <= stepEndedAt).slice(0, 25).map(log => ({ id: log.id, timestamp: log.timestamp, type: log.type, severity: log.severity, message: log.message, details: log.details }));
       const selectorHealth = scoreSelector(stepResult.usedSelector || step.selector, Boolean(stepResult.healed));
       const detail = {
         stepIndex,
@@ -171,33 +170,32 @@ async function runTestSuite(tabId, delayBetweenSteps = 500, stopOnError = true, 
       };
 
       if (step.selector) {
-        appState.selectorHealingHistory.unshift({ id: `selector_${Date.now()}_${stepIndex}`, suiteId: appState.activeSuiteId, stepId: step.id, stepIndex, selector: step.selector, usedSelector: stepResult.usedSelector || step.selector, healed: Boolean(stepResult.healed), score: selectorHealth, timestamp: stepEndedAt });
-        appState.selectorHealingHistory = appState.selectorHealingHistory.slice(0, 300);
+        const healing = qaState.qa.selectorHealingHistory();
+        healing.unshift({ id: `selector_${Date.now()}_${stepIndex}`, suiteId: qaState.suites.activeId(), stepId: step.id, stepIndex, selector: step.selector, usedSelector: stepResult.usedSelector || step.selector, healed: Boolean(stepResult.healed), score: selectorHealth, timestamp: stepEndedAt });
+        if (healing.length > 300) healing.length = 300;
       }
 
-      appState.executionResults.stepDetails.push(detail);
+      qaState.execution.results().stepDetails.push(detail);
 
       if (stepResult.success) {
-        appState.executionResults.passedSteps++;
-        if (isSlow) appState.executionResults.slowSteps++;
+        qaState.execution.patchResults({ passedSteps: qaState.execution.results().passedSteps + 1, slowSteps: isSlow ? qaState.execution.results().slowSteps + 1 : qaState.execution.results().slowSteps });
       } else {
-        appState.executionResults.failedSteps++;
+        qaState.execution.patchResults({ failedSteps: qaState.execution.results().failedSteps + 1 });
         if (stopOnError) {
-          appState.executionResults.status = 'FAILED';
-          appState.executionResults.endTime = new Date().toISOString();
+          qaState.execution.patchResults({ status: 'FAILED', endTime: new Date().toISOString() });
           saveExecutionToHistory();
           saveState();
-          broadcastToSidepanel({ action: 'EXECUTION_FINISHED', results: appState.executionResults });
-          executionControl = { runId: null, paused: false, cancelled: false };
-          return appState.executionResults;
+          broadcastToSidepanel({ action: 'EXECUTION_FINISHED', results: qaState.execution.results() });
+          qaState.execution.setControl({ runId: null, paused: false, cancelled: false });
+          return qaState.execution.results();
         }
       }
     } catch (err) {
       let screenshot = null;
       try { screenshot = await captureTabScreenshot(); } catch (e) {}
 
-      appState.executionResults.failedSteps++;
-      appState.executionResults.stepDetails.push({
+      qaState.execution.patchResults({ failedSteps: qaState.execution.results().failedSteps + 1 });
+      qaState.execution.results().stepDetails.push({
         stepIndex,
         stepId: step.id,
         action: step.action,
@@ -210,40 +208,38 @@ async function runTestSuite(tabId, delayBetweenSteps = 500, stopOnError = true, 
         screenshot: screenshot,
         startedAt: stepStartedAt,
         timestamp: new Date().toISOString(),
-        evidenceLogs: appState.logs.filter(log => log.timestamp >= stepStartedAt).slice(0, 25).map(log => ({ id: log.id, timestamp: log.timestamp, type: log.type, severity: log.severity, message: log.message, details: log.details }))
+        evidenceLogs: qaState.logs.all().filter(log => log.timestamp >= stepStartedAt).slice(0, 25).map(log => ({ id: log.id, timestamp: log.timestamp, type: log.type, severity: log.severity, message: log.message, details: log.details }))
       });
 
       if (stopOnError) {
-        appState.executionResults.status = 'FAILED';
-        appState.executionResults.endTime = new Date().toISOString();
+        qaState.execution.patchResults({ status: 'FAILED', endTime: new Date().toISOString() });
         saveExecutionToHistory();
         saveState();
-        broadcastToSidepanel({ action: 'EXECUTION_FINISHED', results: appState.executionResults });
-        executionControl = { runId: null, paused: false, cancelled: false };
-        return appState.executionResults;
+        broadcastToSidepanel({ action: 'EXECUTION_FINISHED', results: qaState.execution.results() });
+        qaState.execution.setControl({ runId: null, paused: false, cancelled: false });
+        return qaState.execution.results();
       }
     }
 
-    broadcastToSidepanel({ action: 'STEP_EXECUTION_PROGRESS', results: appState.executionResults });
+    broadcastToSidepanel({ action: 'STEP_EXECUTION_PROGRESS', results: qaState.execution.results() });
 
     if (i < steps.length - 1) {
       await new Promise(res => setTimeout(res, delayBetweenSteps));
     }
   }
 
-  appState.executionResults.status = appState.executionResults.failedSteps === 0 ? 'COMPLETED' : 'FAILED';
-  appState.executionResults.endTime = new Date().toISOString();
+  qaState.execution.patchResults({ status: qaState.execution.results().failedSteps === 0 ? 'COMPLETED' : 'FAILED', endTime: new Date().toISOString() });
   saveExecutionToHistory();
   saveState();
-  broadcastToSidepanel({ action: 'EXECUTION_FINISHED', results: appState.executionResults });
-  executionControl = { runId: null, paused: false, cancelled: false };
-  return appState.executionResults;
+  broadcastToSidepanel({ action: 'EXECUTION_FINISHED', results: qaState.execution.results() });
+  qaState.execution.setControl({ runId: null, paused: false, cancelled: false });
+  return qaState.execution.results();
 }
 
 function resolveStepVariables(step) {
-  const environment = appState.environments.find(env => env.id === appState.activeEnvironmentId) || appState.environments[0] || { variables: {} };
-  const dataset = appState.datasets.find(item => item.id === appState.activeDatasetId);
-  const datasetVariables = dataset?.rows?.[appState.activeDatasetRow] || {};
+  const environment = qaState.data.environments().find(env => env.id === qaState.data.activeEnvironmentId()) || qaState.data.environments()[0] || { variables: {} };
+  const dataset = qaState.data.datasets().find(item => item.id === qaState.data.activeDatasetId());
+  const datasetVariables = dataset?.rows?.[qaState.data.activeDatasetRow()] || {};
   const variables = { baseUrl: environment.baseUrl || '', ...(environment.variables || {}), ...datasetVariables, ...runtimeVariables, ...sessionSecrets };
   const interpolate = value => String(value ?? '').replace(/\{\{([a-zA-Z0-9_.-]+)\}\}/g, (match, key) => Object.prototype.hasOwnProperty.call(variables, key) ? String(variables[key]) : match);
   return { ...step, selector: interpolate(step.selector), value: interpolate(step.value), fallbackSelectors: (step.fallbackSelectors || []).map(interpolate) };
@@ -267,17 +263,18 @@ async function executeBackgroundAssertion(step) {
     if (!current) return { success: false, error: 'Screenshot tidak tersedia', duration: Date.now() - start };
     let visualConfig = {};
     try { visualConfig = step.value?.trim()?.startsWith('{') ? JSON.parse(step.value) : { threshold: parseFloat(step.value) }; } catch (error) { return { success: false, error: `Konfigurasi visual tidak valid: ${error.message}`, duration: Date.now() - start }; }
-    const baseline = appState.visualBaselines[step.id];
+    const baseline = qaState.qa.visualBaselines()[step.id];
     if (visualConfig.approveBaseline === true) {
-      appState.visualBaselines[step.id] = current;
+      qaState.qa.setVisualBaseline(step.id, current);
       saveState();
       return { success: true, baselineUpdated: true, duration: Date.now() - start };
     }
     if (!baseline) {
       if (visualConfig.requireApproval === true) return { success: false, error: 'Baseline visual menunggu persetujuan', expected: 'Approved baseline', actual: 'Candidate captured', baselineCandidate: current, duration: Date.now() - start };
-      appState.visualBaselines[step.id] = current;
-      const baselineIds = Object.keys(appState.visualBaselines);
-      while (baselineIds.length > 20) delete appState.visualBaselines[baselineIds.shift()];
+      qaState.qa.setVisualBaseline(step.id, current);
+      const baselines = qaState.qa.visualBaselines();
+      const baselineIds = Object.keys(baselines);
+      while (baselineIds.length > 20) delete baselines[baselineIds.shift()];
       saveState();
       return { success: true, baselineCreated: true, duration: Date.now() - start };
     }
@@ -289,14 +286,14 @@ async function executeBackgroundAssertion(step) {
       : { success: false, error: 'Visual regression terdeteksi', expected: `<=${threshold}%`, actual: `${difference.toFixed(2)}%`, visualDifference: difference, baselineCandidate: current, duration: Date.now() - start };
   }
   if (step.action === 'assert_no_console_errors') {
-    const errors = appState.logs.filter(log => ['console_error', 'uncaught_exception'].includes(log.type));
+    const errors = qaState.logs.all().filter(log => ['console_error', 'uncaught_exception'].includes(log.type));
     return errors.length
       ? { success: false, error: `${errors.length} console error ditemukan`, expected: '0', actual: String(errors.length), duration: Date.now() - start }
       : { success: true, duration: Date.now() - start };
   }
   const endpoint = String(step.selector || '');
   const expectedStatus = parseInt(step.value, 10);
-  const match = appState.logs.find(log => ['network_error', 'network_slow'].includes(log.type) && (!endpoint || String(log.details?.url || '').includes(endpoint)));
+  const match = qaState.logs.all().find(log => ['network_error', 'network_slow'].includes(log.type) && (!endpoint || String(log.details?.url || '').includes(endpoint)));
   const actualStatus = match?.details?.status;
   return actualStatus === expectedStatus
     ? { success: true, duration: Date.now() - start }
@@ -446,28 +443,28 @@ async function compareScreenshots(baselineUrl, currentUrl, ignoreRegions = []) {
 // EXECUTION HISTORY (P1)
 // ========================================
 function saveExecutionToHistory() {
+  const results = qaState.execution.results();
   const entry = {
     id: 'run_' + Date.now(),
-    suiteId: appState.executionResults.suiteId,
-    suiteName: appState.executionResults.suiteName,
-    datasetName: appState.executionResults.datasetName || '',
-    datasetRow: appState.executionResults.datasetRow,
-    status: appState.executionResults.status,
-    totalSteps: appState.executionResults.totalSteps,
-    passedSteps: appState.executionResults.passedSteps,
-    failedSteps: appState.executionResults.failedSteps,
-    slowSteps: appState.executionResults.slowSteps || 0,
-    startTime: appState.executionResults.startTime,
-    endTime: appState.executionResults.endTime,
-    durationMs: new Date(appState.executionResults.endTime) - new Date(appState.executionResults.startTime),
-    stepOutcomes: (appState.executionResults.stepDetails || []).map(detail => ({
+    suiteId: results.suiteId,
+    suiteName: results.suiteName,
+    datasetName: results.datasetName || '',
+    datasetRow: results.datasetRow,
+    status: results.status,
+    totalSteps: results.totalSteps,
+    passedSteps: results.passedSteps,
+    failedSteps: results.failedSteps,
+    slowSteps: results.slowSteps || 0,
+    startTime: results.startTime,
+    endTime: results.endTime,
+    durationMs: new Date(results.endTime) - new Date(results.startTime),
+    stepOutcomes: (results.stepDetails || []).map(detail => ({
       stepId: detail.stepId || `index_${detail.stepIndex}`,
       stepIndex: detail.stepIndex,
       status: detail.status,
       durationMs: detail.executionTimeMs || 0
     }))
   };
-  appState.executionHistory.unshift(entry);
-  if (appState.executionHistory.length > 20) appState.executionHistory.pop();
+  qaState.execution.pushHistory(entry);
 }
 

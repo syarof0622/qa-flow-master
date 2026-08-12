@@ -36,11 +36,12 @@ function auditHash(prevHash, entry) {
 }
 
 function pushAuditEntry(fields) {
-  const prevHash = appState.auditTrail.length ? appState.auditTrail[appState.auditTrail.length - 1].hash : '00000000';
+  const trail = qaState.qa.auditTrail();
+  const prevHash = trail.length ? trail[trail.length - 1].hash : '00000000';
   const entry = { id: crypto.randomUUID(), device: workspaceId || 'unknown', timestamp: new Date().toISOString(), ...fields, prevHash };
   entry.hash = auditHash(prevHash, entry);
-  appState.auditTrail.push(entry);
-  appState.auditTrail = appState.auditTrail.slice(-200);
+  trail.push(entry);
+  if (trail.length > 200) trail.splice(0, trail.length - 200);
   return entry;
 }
 
@@ -97,9 +98,9 @@ async function fetchFromSupabase() {
         const cloudData = data[0].state_data;
         
         // Preserve un-synced local video history if cloud is stale
-        if (appState.videoHistory?.length > 0) {
+        if (qaState.video.history().length > 0) {
            const cloudHistory = Array.isArray(cloudData.videoHistory) ? cloudData.videoHistory : [];
-           const merged = [...appState.videoHistory];
+           const merged = [...qaState.video.history()];
            for (const item of cloudHistory) {
              if (!merged.find(m => m.url === item.url)) merged.push(item);
            }
@@ -113,7 +114,7 @@ async function fetchFromSupabase() {
 
         // Seamlessly merge copilot chat threads from local and cloud
         if (Array.isArray(cloudData.copilotThreads)) {
-          const localThreads = Array.isArray(appState.copilotThreads) ? appState.copilotThreads : [];
+          const localThreads = [...qaState.copilot.threads()];
           const mergedThreads = [...localThreads];
           for (const cloudThread of cloudData.copilotThreads) {
             const idx = mergedThreads.findIndex(t => t.id === cloudThread.id);
@@ -136,8 +137,8 @@ async function fetchFromSupabase() {
         // so Supabase cloud sync (which sanitizes keys before push) never wipes local settings!
         // The AI API key is NOT handled here - it lives only in the separate
         // `qa_ai_settings` local key and is never stored inside `appState`.
-        const currentVideoApiKey = appState.videoSettings?.apiKey || '';
-        const currentSessionSecrets = appState.sessionSecrets || {};
+        const currentVideoApiKey = qaState.settings.video()?.apiKey || '';
+        const currentSessionSecrets = qaState.settings.secrets();
 
         appState = { ...appState, ...cloudData };
         // Defense in depth: strip any apiKey that might still be present on an

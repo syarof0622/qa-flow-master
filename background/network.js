@@ -1,6 +1,7 @@
 async function detectNetworkAndVPN() {
-  const cacheAge = appState.networkStatus?.detectedAt ? Date.now() - new Date(appState.networkStatus.detectedAt).getTime() : Infinity;
-  if (cacheAge < 15 * 60 * 1000) return appState.networkStatus;
+  const current = qaState.network.status();
+  const cacheAge = current?.detectedAt ? Date.now() - new Date(current.detectedAt).getTime() : Infinity;
+  if (cacheAge < 15 * 60 * 1000) return current;
 
   const vpnKeywords = [
     'vpn', 'proxy', 'm247', 'digitalocean', 'linode', 'aws', 'amazon', 'google cloud', 
