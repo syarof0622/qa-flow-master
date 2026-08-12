@@ -597,13 +597,18 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
       return true;
 
     case 'ENSURE_MONITOR_INJECTED':
-      ensureMonitorInjected(payload?.tabId || sender.tab?.id, !isContentScript, payload?.recorderOnly !== true)
-        .then(async () => {
-          const tabId = payload?.tabId || sender.tab?.id;
-          const recorder = await sendCommandToTab(tabId, { action: 'RECORDER_STATUS' }, 0).catch(() => null);
-          sendResponse({ status: 'SUCCESS', ready: Boolean(recorder?.ready), recorder });
-        })
-        .catch(err => sendResponse({ status: 'ERROR', error: err.message }));
+      // Compute the "is this a content-script sender?" flag locally — the router's
+      // local const is not in scope here (background.js owns the message listener).
+      {
+        const senderIsContentScript = Boolean(sender?.tab) && typeof sender?.url === 'string' && !sender.url.startsWith(chrome.runtime.getURL(''));
+        ensureMonitorInjected(payload?.tabId || sender.tab?.id, !senderIsContentScript, payload?.recorderOnly !== true)
+          .then(async () => {
+            const tabId = payload?.tabId || sender.tab?.id;
+            const recorder = await sendCommandToTab(tabId, { action: 'RECORDER_STATUS' }, 0).catch(() => null);
+            sendResponse({ status: 'SUCCESS', ready: Boolean(recorder?.ready), recorder });
+          })
+          .catch(err => sendResponse({ status: 'ERROR', error: err.message }));
+      }
       return true;
 
     case 'STOP_MONITOR':

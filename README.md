@@ -6,6 +6,7 @@ Chrome recorder plus a production Playwright automation runner. A suite recorded
 
 - **Recorder & authoring** — record real interactions, auto-generate resilient CSS selectors, or author steps manually (30+ actions)
 - **AI Copilot** — generate test scenarios from natural language or screenshots, with multimodal attachments and persistent threads (Gemini / Claude / DeepSeek)
+- **AI Sharing Agent** *(toggle in Copilot)* — the AI autonomously drives the open page: finds and clicks the login/register button, reads the form, fills realistic data, follows "next", then hands over a complete test case to save or run
 - **AI data generator** — create dataset rows from a prompt
 - **Bug Exporter** — one-click export to Slack, Teams, GitHub, Linear, and Jira (JAM-style)
 - **Visual & API testing** — screenshot baselines, network/console/security assertions, API requests, mock routes

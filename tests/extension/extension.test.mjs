@@ -77,14 +77,14 @@ test('extension boots and core authoring UI is available', async () => {
     assert.equal(await page.locator('.qa-readiness-card .bento-card-header > .qa-governance-menu-wrap').count(), 1);
     assert.equal(await page.locator('.qa-readiness-card .bento-card-header > .qa-governance-actions').count(), 0, 'QA actions must not crowd the card header');
     await page.locator('#btnQaGovernanceMenu').click();
-    assert.equal(await page.locator('#qaGovernanceMenu [role="menuitem"]').count(), 9);
+    assert.equal(await page.locator('#qaGovernanceMenu [role="menuitem"]').count(), 12);
     assert.match(await page.locator('#qaGovernanceMenu').innerText(), /Persyaratan/);
     await page.evaluate(() => window.QAI18n.setLanguage('en', false));
     assert.match(await page.locator('#qaGovernanceMenu').innerText(), /Requirements/);
     assert.match(await page.locator('#qaGovernanceMenu').innerText(), /Add defect/);
     assert.equal(await page.evaluate(() => window.QAI18n.t('Halaman siap direkam', 'en')), 'Page ready to record');
     await page.evaluate(() => window.QAI18n.setLanguage('id', false));
-    assert.equal(await page.locator('#qaGovernanceMenu [role="menuitem"] svg').count(), 9, 'Governance menu must use consistent flat icons');
+    assert.equal(await page.locator('#qaGovernanceMenu [role="menuitem"] svg').count(), 12, 'Governance menu must use consistent flat icons');
     const menuWidth = await page.locator('#qaGovernanceMenu').evaluate(element => element.getBoundingClientRect().width);
     assert.equal(menuWidth <= 155, true, 'Governance menu must remain compact');
     const menuZ = await page.locator('.qa-readiness-card').evaluate(element => Number(getComputedStyle(element).zIndex));
@@ -325,4 +325,66 @@ test('ai copilot generates and renders steps from a mocked provider response', a
     // Send button must re-enable after generation.
     assert.equal(await page.locator('#btnSendCopilot').isEnabled(), true);
   } finally { await context.close(); }
+});
+
+test('ai sharing agent drives the live page and produces steps', async () => {
+  const server = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'text/html' });
+    response.end('<!doctype html><title>Agent Fixture</title><button id="login-link" type="button" onclick="document.getElementById(\'form\').style.display=\'block\'">Login</button><div id="form" style="display:none"><input id="email" name="email" placeholder="Email"><input id="password" type="password" placeholder="Password"><button id="submit" type="button">Masuk</button></div>');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const extensionPath = path.resolve('.');
+  let context;
+  try {
+    context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    const target = await context.newPage();
+    await target.goto(baseUrl + '/');
+    await target.bringToFront();
+
+    // Enable agent mode + stateful mocked AI: first answer = click, second = done.
+    await sidepanel.evaluate(() => chrome.storage.local.set({
+      qa_agent_settings: { enabled: true },
+      qa_ai_settings: { provider: 'gemini', model: 'gemini-2.0-flash', apiKey: 'TEST_KEY' }
+    }));
+    await sidepanel.evaluate(() => {
+      let calls = 0;
+      window.fetch = async (url) => {
+        if (!String(url).includes('generativelanguage')) return { ok: false, status: 404, statusText: 'Not Found', json: async () => ({}) };
+        calls += 1;
+        const reply = calls === 1
+          ? '{"tool":"click","selector":"#login-link","description":"Buka halaman login"}'
+          : '{"tool":"done","summary":"Skenario login selesai","steps":[{"action":"click","selector":"#login-link","description":"Buka halaman login"},{"action":"fill","selector":"#email","value":"test@example.com","description":"Isi email"},{"action":"fill","selector":"#password","value":"Password123!","description":"Isi password"}]}';
+        return { ok: true, status: 200, statusText: 'OK', json: async () => ({ candidates: [{ content: { parts: [{ text: reply }] } }] }) };
+      };
+    });
+
+    // Use DOM-level clicks (page.evaluate) so the sidepanel tab never steals
+    // browser focus — the agent's getActiveTab() must see the target page, not
+    // the chrome-extension:// sidepanel tab.
+    await sidepanel.evaluate(() => document.getElementById('tab-btn-copilot').click());
+    await target.bringToFront();
+    await sidepanel.evaluate(() => {
+      document.getElementById('copilotInput').value = 'Buatkan test case login';
+      document.getElementById('btnSendCopilot').click();
+    });
+
+    // The agent must click the login button, then hand over the steps.
+    await sidepanel.locator('.copilot-action-group').waitFor({ timeout: 25000 });
+    await sidepanel.getByText('3 Langkah Tes Di-generate').waitFor();
+    assert.equal(await sidepanel.locator('.copilot-step-item').count(), 3);
+    // The live page must have been clicked by the agent (form now visible).
+    await target.locator('#form').waitFor({ state: 'visible', timeout: 8000 });
+    assert.equal(await sidepanel.locator('#btnSendCopilot').isEnabled(), true);
+    // Cleanup: disable agent mode for other tests.
+    await sidepanel.evaluate(() => chrome.storage.local.set({ qa_agent_settings: { enabled: false } }));
+  } finally {
+    await context?.close();
+    await new Promise(resolve => server.close(resolve));
+  }
 });

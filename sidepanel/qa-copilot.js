@@ -663,6 +663,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw new Error('API Key belum diatur. Silakan klik tombol di bawah untuk memasukkan API Key.');
       }
 
+      // ---- AI SHARING AGENT MODE (optional) ----
+      // When enabled, the AI drives the live page (find login/register, click,
+      // inspect the form, fill data, continue) and hands over the final test case.
+      const agentIsEn = (window.QAI18n?.getLanguage?.() || 'id') === 'en';
+      const agentMode = await window.QAFlow.isAgentModeEnabled?.();
+      if (agentMode && typeof window.QAFlow.runAgentTask === 'function') {
+        const agentThinking = agentIsEn ? 'AI Agent is exploring the page & building a test case…' : 'AI Agent sedang menjelajahi halaman & menyusun test case…';
+        thinkingMsgEl = appendCopilotMsg(agentThinking, 'system', false);
+        let agentResult;
+        try {
+          agentResult = await window.QAFlow.runAgentTask(displayUserText, {
+            onProgress: (p) => {
+              const bubble = thinkingMsgEl?.querySelector('.msg-bubble');
+              if (!bubble || !p?.action?.tool || p.action.tool === 'done') return;
+              const label = { click: 'klik', fill: 'isi', select: 'pilih', wait: 'tunggu' }[p.action.tool] || p.action.tool;
+              bubble.textContent = `${agentThinking} (${p.iteration}) ${label} ${p.action.selector || p.action.ms || ''}`.trim();
+            }
+          });
+        } finally {
+          thinkingMsgEl?.remove();
+          thinkingMsgEl = null;
+        }
+
+        const cleanReply = agentResult?.cleanReply || (agentIsEn ? 'AI agent generated a test scenario for this page:' : 'AI agent berhasil membuat skenario uji untuk halaman ini:');
+        let agentSteps = agentResult?.steps || [];
+        let currentThread = copilotThreads.find(t => t.id === targetThreadId);
+        if (currentThread) {
+          currentThread.messages.push({
+            id: `msg_${Date.now()}`,
+            sender: 'system',
+            text: cleanReply,
+            cleanReply,
+            steps: agentSteps,
+            timestamp: new Date().toISOString()
+          });
+          currentThread.updatedAt = new Date().toISOString();
+          chrome.storage.local.set({ qa_copilot_threads: copilotThreads, qa_active_copilot_thread_id: activeThreadId });
+          window.QAFlow.sendRuntimeMessage('SAVE_COPILOT_THREAD', { thread: currentThread });
+          renderThreadSelector();
+        }
+        appendCopilotStepCardMsg(cleanReply, agentSteps, false);
+        return;
+      }
+
       // Provider capability guard for image attachments:
       // - DeepSeek chat API has no vision (images are only noted by name).
       // - Claude caps inline images (~5MB base64); oversized images are dropped.

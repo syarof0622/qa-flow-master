@@ -62,8 +62,7 @@
         <select id="suiteSelector" class="bento-select" aria-label="Pilih proyek aktif"></select>
       </div>
       <div class="suite-actions">
-        <label for="suiteSelector" class="bento-icon-btn" style="cursor: pointer;" title="Buka Daftar Proyek"
-          aria-label="Buka daftar proyek">
+        <label for="suiteSelector" class="bento-icon-btn" style="cursor: pointer;" title="Buka Daftar Proyek">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
@@ -843,6 +842,11 @@
                 Ready</span>
             </div>
             <div class="copilot-header-top-actions">
+              <label class="agent-mode-toggle" id="agentModeToggleWrap" title="AI Sharing Agent" aria-label="AI Sharing Agent: jelajahi halaman otomatis">
+                <span class="agent-mode-label">Agent</span>
+                <input type="checkbox" id="agentModeToggle" class="agent-mode-checkbox">
+                <span class="agent-mode-switch" aria-hidden="true"></span>
+              </label>
               <button id="btnOpenAiSettingsDirect" class="bento-icon-btn" title="Pengaturan AI (API Key)">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="3" />
@@ -1446,6 +1450,8 @@
   <script src="sidepanel.js"></script>
   <!-- Feature modules: isolated DOMContentLoaded scopes communicating via window.QAFlow -->
   <script src="sidepanel/qa-copilot.js"></script>
+  <script src="sidepanel/agent-protocol.js"></script>
+  <script src="sidepanel/ai-agent.js"></script>
   <script src="sidepanel/ai-data-generator.js"></script>
   <script src="sidepanel/jam-killer.js"></script>
 </body>
