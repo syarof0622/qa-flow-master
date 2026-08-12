@@ -33,6 +33,14 @@
     return Boolean(action && action.tool === 'done');
   }
 
+  // Labels that signal a destructive/irreversible action. The agent must ask for
+  // explicit user confirmation before clicking such an element (safety gate).
+  const DESTRUCTIVE_RE = /(hapus|menghapus|delete|remove|log\s?out|sign\s?out|keluar|clear\s?(all|data|cache)?|reset|uninstall|discard|trash|revoke|abort|batal\s?kan|tutup\s?(akun|sesi)|deactivate|nonaktifkan|withdraw)/i;
+
+  function isDestructiveLabel(label) {
+    return DESTRUCTIVE_RE.test(String(label || ''));
+  }
+
   function agentToolDocs() {
     return Object.entries(AGENT_TOOLS).map(([, v]) => `- ${v}`).join('\n');
   }

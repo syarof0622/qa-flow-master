@@ -12,6 +12,7 @@
 // EXECUTE_STEP keeps working even after the agent navigates the page.
 document.addEventListener('DOMContentLoaded', async () => {
   const showBentoAlert = window.QAFlow.showBentoAlert;
+  const showBentoConfirm = window.QAFlow.showBentoConfirm;
   const getState = () => window.QAFlow.getState?.() || {};
 
   const AGENT_SETTINGS_KEY = 'qa_agent_settings';
@@ -90,6 +91,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     return new Promise(resolve => {
       chrome.tabs.sendMessage(tabId, { action: 'EXECUTE_STEP', step, stepIndex }, res => resolve(res || { success: false, error: 'Tidak ada content script di halaman. Muat ulang dan coba lagi.' }));
     });
+  }
+
+  // Read the visible label of an element so the agent can ask before destructive clicks.
+  async function getElementLabel(tabId, selector) {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: (sel) => {
+        try {
+          const el = document.querySelector(sel);
+          if (!el) return '';
+          return (el.innerText || el.textContent || el.getAttribute('aria-label') || el.getAttribute('value') || '').trim().replace(/\s+/g, ' ').slice(0, 60);
+        } catch (err) { return ''; }
+      },
+      args: [selector]
+    }).catch(() => []);
+    return results?.[0]?.result || '';
   }
 
   function buildAgentSystemPrompt() {
@@ -174,6 +191,23 @@ RULES:
       if (!step.selector) {
         history.push(`${i + 1}. ⚠ ${action.tool} tanpa selector`);
         continue;
+      }
+      // Safety gate: before a click, check whether the element looks destructive
+      // (hapus/delete/logout/keluar/...). If so, ask the user for confirmation so
+      // a prompt-injected page can never make the agent delete data or sign out.
+      if (action.tool === 'click') {
+        const label = (await getElementLabel(tab.id, step.selector)) || step.selector;
+        if (isDestructiveLabel(label)) {
+          const proceed = await showBentoConfirm(
+            'Konfirmasi Aksi Agent',
+            `AI Agent ingin mengklik elemen berisiko:\n"${label}"\n\nLanjutkan?`,
+            { icon: '⚠️', confirmText: 'Ya, Klik' }
+          );
+          if (!proceed) {
+            history.push(`${i + 1}. ⏸ dilewati (butuh persetujuan): ${action.tool} ${step.selector}`);
+            continue;
+          }
+        }
       }
       // content.js (EXECUTE_STEP) does not persist across navigations, so re-ensure
       // the bridge before every action. Cheap when already injected; re-injects

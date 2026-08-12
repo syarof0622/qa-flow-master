@@ -400,3 +400,69 @@ test('ai sharing agent drives the live page and produces steps', async () => {
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+test('ai sharing agent asks confirmation before destructive clicks and skips on deny', async () => {
+  const server = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'text/html' });
+    // A destructive button + a safe login link. Clicking the destructive button
+    // sets a global so we can verify the agent never actually clicked it.
+    response.end('<!doctype html><title>Agent Destructive Fixture</title><button id="delete-btn" type="button" onclick="window.__deleteClicked=true">Hapus Akun</button><a id="login-link" href="/login">Login</a>');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const extensionPath = path.resolve('.');
+  let context;
+  try {
+    context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    const target = await context.newPage();
+    await target.goto(baseUrl + '/');
+    await target.bringToFront();
+
+    await sidepanel.evaluate(() => chrome.storage.local.set({
+      qa_agent_settings: { enabled: true },
+      qa_ai_settings: { provider: 'gemini', model: 'gemini-2.0-flash', apiKey: 'TEST_KEY' }
+    }));
+    // Mock AI: first asks to click the destructive button, then finishes.
+    await sidepanel.evaluate(() => {
+      let calls = 0;
+      window.fetch = async (url) => {
+        if (!String(url).includes('generativelanguage')) return { ok: false, status: 404, statusText: 'nf', json: async () => ({}) };
+        calls += 1;
+        const reply = calls === 1
+          ? '{"tool":"click","selector":"#delete-btn","description":"Hapus akun"}'
+          : '{"tool":"done","summary":"Selesai","steps":[{"action":"click","selector":"#login-link","description":"Buka login"},{"action":"assert_url","value":"/login","description":"Cek URL"}]}';
+        return { ok: true, status: 200, statusText: 'OK', json: async () => ({ candidates: [{ content: { parts: [{ text: reply }] } }] }) };
+      };
+    });
+
+    await sidepanel.evaluate(() => document.getElementById('tab-btn-copilot').click());
+    await target.bringToFront();
+    await sidepanel.evaluate(() => {
+      document.getElementById('copilotInput').value = 'Buatkan test case';
+      document.getElementById('btnSendCopilot').click();
+    });
+
+    // The destructive click must trigger the confirmation modal.
+    await sidepanel.locator('#bentoModalConfirmBtn').waitFor({ timeout: 25000 });
+    assert.match(await sidepanel.locator('#bentoModalMessage').innerText(), /Hapus Akun/);
+    // User denies -> agent must skip the click.
+    await sidepanel.locator('#bentoModalCancelBtn').click();
+
+    // Agent finishes with the step card and records the skipped action.
+    await sidepanel.locator('.copilot-action-group').waitFor({ timeout: 25000 });
+    await sidepanel.getByText('2 Langkah Tes Di-generate').waitFor();
+    assert.match(await sidepanel.locator('.agent-activity').innerText(), /dilewati/);
+    // The destructive button must NOT have been clicked.
+    const clicked = await target.evaluate(() => window.__deleteClicked === true);
+    assert.equal(clicked, false, 'Agent must not click a destructive element after user denial');
+    await sidepanel.evaluate(() => chrome.storage.local.set({ qa_agent_settings: { enabled: false } }));
+  } finally {
+    await context?.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});

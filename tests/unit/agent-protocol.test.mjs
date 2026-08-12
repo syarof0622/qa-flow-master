@@ -56,3 +56,16 @@ test('agentToolDocs exposes the tool vocabulary', () => {
     assert.match(docs, new RegExp(tool), `tool docs must mention ${tool}`);
   }
 });
+
+test('isDestructiveLabel flags destructive actions but not safe ones', () => {
+  const destructive = ['Hapus Akun', 'Delete', 'Remove item', 'Logout', 'Keluar', 'Sign Out', 'Reset password', 'Clear data', 'Hapus'];
+  for (const label of destructive) {
+    assert.equal(ctx.isDestructiveLabel(label), true, `expected destructive: ${label}`);
+  }
+  const safe = ['Login', 'Masuk', 'Simpan', 'Kirim', 'Buat akun', 'Lanjut', 'Berikutnya', 'Tambah'];
+  for (const label of safe) {
+    assert.equal(ctx.isDestructiveLabel(label), false, `expected safe: ${label}`);
+  }
+  assert.equal(ctx.isDestructiveLabel(''), false);
+  assert.equal(ctx.isDestructiveLabel(null), false);
+});

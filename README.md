@@ -172,6 +172,7 @@ Unit tests cover the message/step contract, background redaction, the `qaState` 
 - **Prompt-injection defense**: scraped DOM is wrapped as untrusted context and the model is instructed to ignore page text as instructions.
 - **Safe network**: `secureFetch` blocks private-network targets unless explicitly allowed; redirect targets are validated.
 - **Hardened step ingestion**: AI-generated steps are validated against a shared action contract on both the side panel and the background worker.
+- **Agent safety gate**: the AI Sharing Agent asks for confirmation before clicking destructive elements (delete/remove/logout/keluar/...) so a prompt-injected page cannot make it delete data or sign out.
 - **No `eval`/`new Function`** and all user/AI content passes through `escapeHTML`/markdown-escaping before `innerHTML`.
 
 See [Expert guide](docs/expert-guide.md) for authoring, CI patterns, and advanced governance.
