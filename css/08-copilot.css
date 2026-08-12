@@ -760,3 +760,22 @@ body.light-theme .copilot-action-btn.append {
   word-break: break-word;
 }
 
+/* Agent cancel button (inside the thinking bubble while the agent runs) */
+.copilot-cancel-btn {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+  font-size: 8.5px;
+  font-weight: 750;
+  line-height: 1.4;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background 0.15s;
+}
+.copilot-cancel-btn:hover { background: rgba(248, 113, 113, 0.28); }
+.agent-status { vertical-align: middle; }
+

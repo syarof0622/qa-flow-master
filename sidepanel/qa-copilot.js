@@ -691,14 +691,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (agentMode && typeof window.QAFlow.runAgentTask === 'function') {
         const agentThinking = agentIsEn ? 'AI Agent is exploring the page & building a test case…' : 'AI Agent sedang menjelajahi halaman & menyusun test case…';
         thinkingMsgEl = appendCopilotMsg(agentThinking, 'system', false);
+        const thinkingBubble = thinkingMsgEl?.querySelector('.msg-bubble');
+        if (thinkingBubble) {
+          thinkingBubble.innerHTML = `<span class="agent-status">${escapeHTML(agentThinking)}</span>`;
+          const cancelBtn = document.createElement('button');
+          cancelBtn.type = 'button';
+          cancelBtn.className = 'copilot-cancel-btn';
+          cancelBtn.textContent = agentIsEn ? '⏹ Cancel' : '⏹ Batalkan';
+          cancelBtn.addEventListener('click', () => { window.QAFlow.cancelAgentTask?.(); });
+          thinkingBubble.appendChild(cancelBtn);
+        }
         let agentResult;
         try {
           agentResult = await window.QAFlow.runAgentTask(displayUserText, {
             onProgress: (p) => {
-              const bubble = thinkingMsgEl?.querySelector('.msg-bubble');
-              if (!bubble || !p?.action?.tool || p.action.tool === 'done') return;
+              const statusEl = thinkingMsgEl?.querySelector('.agent-status');
+              if (!statusEl || !p?.action?.tool || p.action.tool === 'done') return;
               const label = { click: 'klik', fill: 'isi', select: 'pilih', wait: 'tunggu' }[p.action.tool] || p.action.tool;
-              bubble.textContent = `${agentThinking} (${p.iteration}) ${label} ${p.action.selector || p.action.ms || ''}`.trim();
+              statusEl.textContent = `${agentThinking} (${p.iteration}) ${label} ${p.action.selector || p.action.ms || ''}`.trim();
             }
           });
         } finally {

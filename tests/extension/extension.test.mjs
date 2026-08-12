@@ -466,3 +466,62 @@ test('ai sharing agent asks confirmation before destructive clicks and skips on 
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+test('ai sharing agent can be cancelled from the chat mid-run', async () => {
+  const server = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'text/html' });
+    response.end('<!doctype html><title>Cancel Fixture</title><a id="login-link" href="/login">Login</a>');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const extensionPath = path.resolve('.');
+  let context;
+  try {
+    context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    const target = await context.newPage();
+    await target.goto(baseUrl + '/');
+    await target.bringToFront();
+
+    await sidepanel.evaluate(() => chrome.storage.local.set({
+      qa_agent_settings: { enabled: true },
+      qa_ai_settings: { provider: 'gemini', model: 'gemini-2.0-flash', apiKey: 'TEST_KEY' }
+    }));
+    // Mock AI that keeps waiting for a while, so the test has time to cancel.
+    await sidepanel.evaluate(() => {
+      let calls = 0;
+      window.fetch = async (url) => {
+        if (!String(url).includes('generativelanguage')) return { ok: false, status: 404, statusText: 'nf', json: async () => ({}) };
+        calls += 1;
+        const reply = calls <= 10
+          ? '{"tool":"wait","ms":800}'
+          : '{"tool":"done","summary":"Selesai","steps":[{"action":"click","selector":"#x","description":"X"}]}';
+        return { ok: true, status: 200, statusText: 'OK', json: async () => ({ candidates: [{ content: { parts: [{ text: reply }] } }] }) };
+      };
+    });
+
+    await sidepanel.evaluate(() => document.getElementById('tab-btn-copilot').click());
+    await target.bringToFront();
+    await sidepanel.evaluate(() => {
+      document.getElementById('copilotInput').value = 'Buatkan test case';
+      document.getElementById('btnSendCopilot').click();
+    });
+
+    // Cancel button must appear while the agent runs.
+    await sidepanel.locator('.copilot-cancel-btn').waitFor({ timeout: 15000 });
+    await sidepanel.locator('.copilot-cancel-btn').click();
+
+    // Agent must stop early with a cancellation message, not a step card.
+    await sidepanel.getByText('AI Agent dibatalkan oleh pengguna.').waitFor({ timeout: 10000 });
+    assert.equal(await sidepanel.locator('.copilot-action-group').count(), 0, 'No step card after cancel');
+    assert.equal(await sidepanel.locator('#btnSendCopilot').isEnabled(), true);
+    await sidepanel.evaluate(() => chrome.storage.local.set({ qa_agent_settings: { enabled: false } }));
+  } finally {
+    await context?.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});

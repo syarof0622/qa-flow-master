@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const AGENT_SETTINGS_KEY = 'qa_agent_settings';
   const MAX_ITERATIONS = 20;
 
+  // Lets the user stop the agent mid-loop from the Copilot UI (cancel button).
+  let agentAbortController = null;
+
   async function getAgentSettings() {
     const store = await chrome.storage.local.get(AGENT_SETTINGS_KEY).catch(() => ({}));
     const settings = store?.[AGENT_SETTINGS_KEY] || {};
@@ -151,71 +154,97 @@ RULES:
     let steps = [];
     let finalReply = '';
 
-    for (let i = 0; i < MAX_ITERATIONS; i++) {
-      const dom = await extractDom(tab.id);
-      const context = `TUJUAN USER: ${String(promptText || '').slice(0, 2000)}\n\nHALAMAN SAAT INI\nURL: ${dom.url}\nJudul: ${dom.title}\n\n[STRUKTUR INTERAKTIF]\n${dom.interactive || '(tidak ada elemen terdeteksi)'}\n\n[RIWAYAT AKSI]\n${history.slice(-12).join('\n') || '(belum ada)'}`;
+    // Cancel support: a new controller per run; the UI calls cancelAgentTask().
+    agentAbortController = new AbortController();
+    const signal = agentAbortController.signal;
+    // Cache the last DOM snapshot: on retry/wait the page is unchanged, so we skip
+    // an expensive executeScript round-trip; after any executed action we re-extract.
+    let lastDom = null;
 
-      let reply = '';
-      try {
-        reply = await ai.sendPrompt(buildAgentSystemPrompt(), context);
-      } catch (err) {
-        throw new Error('Agent gagal menghubungi AI: ' + err.message);
-      }
+    try {
+      for (let i = 0; i < MAX_ITERATIONS; i++) {
+        if (signal.aborted) {
+          finalReply = 'AI Agent dibatalkan oleh pengguna.';
+          break;
+        }
 
-      const action = parseAgentAction(reply);
-      onProgress?.({ iteration: i + 1, action });
+        let dom = lastDom;
+        if (dom === null) dom = await extractDom(tab.id);
+        const context = `TUJUAN USER: ${String(promptText || '').slice(0, 2000)}\n\nHALAMAN SAAT INI\nURL: ${dom.url}\nJudul: ${dom.title}\n\n[STRUKTUR INTERAKTIF]\n${dom.interactive || '(tidak ada elemen terdeteksi)'}\n\n[RIWAYAT AKSI]\n${history.slice(-12).join('\n') || '(belum ada)'}`;
 
-      if (isTerminalAction(action)) {
-        steps = Array.isArray(action.steps) ? action.steps : [];
-        finalReply = typeof action.summary === 'string' && action.summary ? action.summary : 'AI Agent selesai menjelajahi halaman dan menyusun test case.';
-        break;
-      }
-      if (action.tool === 'retry') {
-        history.push(`${i + 1}. ⚠ retry: ${action.reason || 'respons tidak valid'}`);
-        await new Promise(r => setTimeout(r, 300));
-        continue;
-      }
-      if (action.tool === 'wait') {
-        await new Promise(r => setTimeout(r, Math.max(0, Math.min(6000, Number(action.ms) || 800))));
-        history.push(`${i + 1}. wait ${action.ms || 800}ms`);
-        continue;
-      }
+        let reply = '';
+        try {
+          reply = await ai.sendPrompt(buildAgentSystemPrompt(), context);
+        } catch (err) {
+          throw new Error('Agent gagal menghubungi AI: ' + err.message);
+        }
 
-      const stepActionMap = { click: 'click', fill: 'fill', select: 'select' };
-      const step = {
-        action: stepActionMap[action.tool] || 'click',
-        selector: String(action.selector || '').slice(0, 2000),
-        value: String(action.value ?? '').slice(0, 5000),
-        description: action.description || `${action.tool} ${action.selector || ''}`
-      };
-      if (!step.selector) {
-        history.push(`${i + 1}. ⚠ ${action.tool} tanpa selector`);
-        continue;
-      }
-      // Safety gate: before a click, check whether the element looks destructive
-      // (hapus/delete/logout/keluar/...). If so, ask the user for confirmation so
-      // a prompt-injected page can never make the agent delete data or sign out.
-      if (action.tool === 'click') {
-        const label = (await getElementLabel(tab.id, step.selector)) || step.selector;
-        if (isDestructiveLabel(label)) {
-          const proceed = await showBentoConfirm(
-            'Konfirmasi Aksi Agent',
-            `AI Agent ingin mengklik elemen berisiko:\n"${label}"\n\nLanjutkan?`,
-            { icon: '⚠️', confirmText: 'Ya, Klik' }
-          );
-          if (!proceed) {
-            history.push(`${i + 1}. ⏸ dilewati (butuh persetujuan): ${action.tool} ${step.selector}`);
-            continue;
+        const action = parseAgentAction(reply);
+        onProgress?.({ iteration: i + 1, action });
+
+        if (signal.aborted) {
+          finalReply = 'AI Agent dibatalkan oleh pengguna.';
+          break;
+        }
+        if (isTerminalAction(action)) {
+          steps = Array.isArray(action.steps) ? action.steps : [];
+          finalReply = typeof action.summary === 'string' && action.summary ? action.summary : 'AI Agent selesai menjelajahi halaman dan menyusun test case.';
+          break;
+        }
+        if (action.tool === 'retry') {
+          history.push(`${i + 1}. ⚠ retry: ${action.reason || 'respons tidak valid'}`);
+          lastDom = dom;
+          await new Promise(r => setTimeout(r, 300));
+          continue;
+        }
+        if (action.tool === 'wait') {
+          await new Promise(r => setTimeout(r, Math.max(0, Math.min(6000, Number(action.ms) || 800))));
+          history.push(`${i + 1}. wait ${action.ms || 800}ms`);
+          lastDom = dom;
+          continue;
+        }
+
+        const stepActionMap = { click: 'click', fill: 'fill', select: 'select' };
+        const step = {
+          action: stepActionMap[action.tool] || 'click',
+          selector: String(action.selector || '').slice(0, 2000),
+          value: String(action.value ?? '').slice(0, 5000),
+          description: action.description || `${action.tool} ${action.selector || ''}`
+        };
+        if (!step.selector) {
+          history.push(`${i + 1}. ⚠ ${action.tool} tanpa selector`);
+          lastDom = dom;
+          continue;
+        }
+        // Safety gate: before a click, check whether the element looks destructive
+        // (hapus/delete/logout/keluar/...). If so, ask the user for confirmation so
+        // a prompt-injected page can never make the agent delete data or sign out.
+        if (action.tool === 'click') {
+          const label = (await getElementLabel(tab.id, step.selector)) || step.selector;
+          if (isDestructiveLabel(label)) {
+            const proceed = await showBentoConfirm(
+              'Konfirmasi Aksi Agent',
+              `AI Agent ingin mengklik elemen berisiko:\n"${label}"\n\nLanjutkan?`,
+              { icon: '⚠️', confirmText: 'Ya, Klik' }
+            );
+            if (!proceed) {
+              history.push(`${i + 1}. ⏸ dilewati (butuh persetujuan): ${action.tool} ${step.selector}`);
+              lastDom = dom;
+              continue;
+            }
           }
         }
+        // content.js (EXECUTE_STEP) does not persist across navigations, so re-ensure
+        // the bridge before every action. Cheap when already injected; re-injects
+        // automatically after the agent navigates (e.g. after clicking a login link).
+        await ensureBridge(tab.id);
+        const res = await executeAgentStep(tab.id, step, i + 1);
+        history.push(`${i + 1}. ${action.tool} ${step.selector} → ${res.success ? 'OK' : 'GAGAL: ' + (res.error || '')}`);
+        lastDom = null; // the page likely changed after this action
+        await new Promise(r => setTimeout(r, 350));
       }
-      // content.js (EXECUTE_STEP) does not persist across navigations, so re-ensure
-      // the bridge before every action. Cheap when already injected; re-injects
-      // automatically after the agent navigates (e.g. after clicking a login link).
-      await ensureBridge(tab.id);
-      const res = await executeAgentStep(tab.id, step, i + 1);
-      history.push(`${i + 1}. ${action.tool} ${step.selector} → ${res.success ? 'OK' : 'GAGAL: ' + (res.error || '')}`);
-      await new Promise(r => setTimeout(r, 350));
+    } finally {
+      agentAbortController = null;
     }
 
     if (typeof window.QAFlow.sanitizeCopilotSteps === 'function') steps = window.QAFlow.sanitizeCopilotSteps(steps);
@@ -238,6 +267,7 @@ RULES:
   window.QAFlow = Object.assign(window.QAFlow || {}, {
     runAgentTask,
     isAgentModeEnabled: async () => (await getAgentSettings()).enabled,
-    setAgentMode: setAgentEnabled
+    setAgentMode: setAgentEnabled,
+    cancelAgentTask: () => { agentAbortController?.abort(); }
   });
 });
