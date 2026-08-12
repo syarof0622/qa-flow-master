@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnAIGenerateData.disabled = true;
         btnAIGenerateData.style.opacity = '0.5';
 
-        const { AIClient } = await import('./shared/ai-client.js');
+        const { AIClient } = await import('../shared/ai-client.js');
         const ai = new AIClient(settings.provider, settings.apiKey, settings.model);
 
         const systemPrompt = "Anda adalah Data Generator. Hasilkan array of objects JSON berdasarkan permintaan user. Contoh format: [{\"email\": \"...\", \"nama\": \"...\"}]. PASTIKAN output HANYA berisi JSON Array valid tanpa teks penjelasan apapun.";

@@ -679,7 +679,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
 
-      const { AIClient } = await import('./shared/ai-client.js');
+      const { AIClient } = await import('../shared/ai-client.js');
       const ai = new AIClient(settings.provider, settings.apiKey, settings.model);
 
       let tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
