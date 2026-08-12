@@ -1,4 +1,4 @@
-# QA Flow Master Pro 4.2
+# QA Flow Master Pro 4.3
 
 Chrome recorder plus a production Playwright automation runner. A suite recorded in the extension can be exported, schema-validated, executed against datasets, and used as a CI quality gate.
 

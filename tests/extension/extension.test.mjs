@@ -12,7 +12,7 @@ test('extension boots and core authoring UI is available', async () => {
     const extensionId = new URL(worker.url()).host;
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/sidepanel.html`);
-    await page.getByText('PRO v4.2').waitFor();
+    await page.getByText('PRO v4.3').waitFor();
     assert.equal(await page.locator('html').getAttribute('lang'), 'id');
     await page.locator('#btnLanguageToggle').click();
     await page.getByText('Record', { exact: true }).waitFor();

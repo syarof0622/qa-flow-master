@@ -1,4 +1,4 @@
-// content.js - QA Flow Master Pro v4.2 DOM Engine
+// content.js - QA Flow Master Pro v4.3 DOM Engine
 // Features: Advanced Wait Conditions (P1), Step Notes, Performance Threshold, a11y Audit, Clean State
 
 (function () {

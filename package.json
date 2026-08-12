@@ -1,6 +1,6 @@
 {
   "name": "qa-flow-master",
-  "version": "4.2.0",
+  "version": "4.3.0",
   "description": "QA Flow Master - Auto Playwright Test Generator",
   "private": true,
   "type": "module",

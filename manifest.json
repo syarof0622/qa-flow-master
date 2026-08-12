@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "QA Flow Master Pro",
-  "version": "4.2.0",
+  "version": "4.3.0",
   "author": "Syarofuddin",
   "description": "QA automation toolkit: record, validate, run, debug, report, visual/API testing, datasets, and multi-browser CI.",
   "permissions": [
