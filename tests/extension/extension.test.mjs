@@ -653,3 +653,29 @@ test('ai settings UI opens from the extracted module', async () => {
     assert.equal(saved.qa_ai_settings.apiKey, 'TEST_KEY_XYZ');
   } finally { await context.close(); }
 });
+
+test('video settings UI opens and saves from the extracted module', async () => {
+  const extensionPath = path.resolve('.');
+  const context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+  try {
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+
+    // Open Video Settings via the QA governance menu (Reports tab).
+    await sidepanel.locator('#tab-btn-reports').click();
+    await sidepanel.locator('#btnQaGovernanceMenu').click();
+    await sidepanel.locator('#btnVideoSettings').click();
+    await sidepanel.locator('#videoUploadUrl').waitFor({ timeout: 10000 });
+
+    await sidepanel.locator('#videoUploadUrl').fill('https://cloud.example/qa-upload.php');
+    await sidepanel.locator('#videoApiKey').fill('SECRET_KEY');
+    await sidepanel.locator('#btnSaveVideoSettings').click();
+    await sidepanel.locator('#qaWorkspaceOverlay').waitFor({ state: 'hidden', timeout: 10000 });
+    const saved = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, response => resolve(response?.data?.videoSettings))));
+    assert.equal(saved.uploadUrl, 'https://cloud.example/qa-upload.php');
+    assert.equal(saved.apiKey, 'SECRET_KEY');
+  } finally { await context.close(); }
+});
