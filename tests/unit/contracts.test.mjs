@@ -1,10 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
+import path from 'node:path';
 import { ACTION_NAMES } from '../../runner/lib/action-registry.mjs';
 import { validateSuiteDocument } from '../../runner/lib/suite-loader.mjs';
 
 const root = new URL('../../', import.meta.url);
+
+// sidepanel.js was split into a core + modules (incl. pure code generators in
+// sidepanel/codegen.js). Concatenate core + all sidepanel modules so regex
+// checks keep finding symbols that live in the modules.
+const readSidepanel = async () => {
+  const parts = [await readFile(new URL('sidepanel.js', root), 'utf8')];
+  const modDir = new URL('../../sidepanel/', import.meta.url);
+  const files = (await readdir(modDir)).filter(f => f.endsWith('.js')).sort();
+  for (const f of files) parts.push(await readFile(path.join(modDir.pathname, f), 'utf8'));
+  return parts.join('\n');
+};
 
 test('schema action enum matches the action registry', async () => {
   const schema = JSON.parse(await readFile(new URL('qa-flow.schema.json', root), 'utf8'));
@@ -32,7 +44,7 @@ test('manual step UI exposes every registered action', async () => {
 });
 
 test('Playwright code export covers every registered action', async () => {
-  const source = await readFile(new URL('sidepanel.js', root), 'utf8');
+  const source = await readSidepanel();
   const generator = source.slice(source.indexOf('function generatePlaywrightCode'), source.indexOf('function generateCypressCode'));
   for (const action of ACTION_NAMES) assert.match(generator, new RegExp(`case ['\"]${action}['\"]`), `Missing exported action: ${action}`);
 });

@@ -2594,102 +2594,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ========================================
   // CODE GENERATORS
   // ========================================
-  function jsLiteral(value) {
-    return JSON.stringify(String(value ?? ''));
-  }
-
-  function safeCodeComment(value) {
-    return String(value || '').replace(/[\r\n\u2028\u2029]+/g, ' ').replace(/\*\//g, '* /').slice(0, 180);
-  }
-
-  function generatePlaywrightCode(steps, targetUrl) {
-    let s = `import { test, expect } from '@playwright/test';\n\n`;
-    s += `function frameScope(page, expectedUrl) {\n  const expected = new URL(expectedUrl);\n  const frame = page.frames().find(item => item.url() === expectedUrl) || page.frames().find(item => { try { const current = new URL(item.url()); return current.origin === expected.origin && current.pathname === expected.pathname; } catch { return false; } });\n  if (!frame) throw new Error(\`Frame target not found: \${expectedUrl}\`);\n  return frame;\n}\n\n`;
-    s += `test('Automated QA Flow Test', async ({ page, request }) => {\n`;
-    s += `  const consoleErrors = [];\n  const responses = [];\n`;
-    s += `  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });\n`;
-    s += `  page.on('response', response => responses.push({ url: response.url(), status: response.status() }));\n`;
-    s += `  await page.goto(${jsLiteral(targetUrl || 'https://example.com')});\n\n`;
-    steps.forEach((step, i) => {
-      s += `  // Step #${i + 1}: ${safeCodeComment(step.description || step.action)}\n`;
-      const sel = jsLiteral(step.selector || '');
-      const val = jsLiteral(step.value || '');
-      const scope = step.frame?.isTop === false ? `frameScope(page, ${jsLiteral(step.frame.url || '')})` : 'page';
-      switch (step.action) {
-        case 'click': s += `  await ${scope}.locator(${sel}).click();\n`; break;
-        case 'fill': s += `  await ${scope}.locator(${sel}).fill(${val});\n`; break;
-        case 'select': s += `  await ${scope}.locator(${sel}).selectOption(${val});\n`; break;
-        case 'hover': s += `  await ${scope}.locator(${sel}).hover();\n`; break;
-        case 'assert_visible': s += `  await expect(${scope}.locator(${sel})).toBeVisible();\n`; break;
-        case 'assert_enabled': s += `  await expect(${scope}.locator(${sel})).toBeEnabled();\n`; break;
-        case 'assert_disabled': s += `  await expect(${scope}.locator(${sel})).toBeDisabled();\n`; break;
-        case 'assert_checked': s += `  await expect(${scope}.locator(${sel})).toBeChecked();\n`; break;
-        case 'assert_unchecked': s += `  await expect(${scope}.locator(${sel})).not.toBeChecked();\n`; break;
-        case 'assert_text': s += `  await expect(${scope}.locator(${sel})).toContainText(${val});\n`; break;
-        case 'assert_value': s += `  await expect(${scope}.locator(${sel})).toHaveValue(${val});\n`; break;
-        case 'assert_attribute': {
-          const [name, ...expected] = String(step.value || '').split('=');
-          s += `  await expect(${scope}.locator(${sel})).toHaveAttribute(${jsLiteral(name)}, ${jsLiteral(expected.join('='))});\n`; break;
-        }
-        case 'assert_css': {
-          const [name, ...expected] = String(step.value || '').split('=');
-          s += `  await expect(${scope}.locator(${sel})).toHaveCSS(${jsLiteral(name)}, ${jsLiteral(expected.join('='))});\n`; break;
-        }
-        case 'assert_count': s += `  await expect(${scope}.locator(${sel})).toHaveCount(${Number(step.value) || 0});\n`; break;
-        case 'assert_url': s += `  await expect(page).toHaveURL(new RegExp(${val}));\n`; break;
-        case 'assert_screenshot': s += `  await expect(page).toHaveScreenshot(${jsLiteral(`${step.id || `step-${i + 1}`}.png`)}, { fullPage: true, maxDiffPixelRatio: ${Number(step.maxDiffPixelRatio ?? 0.01)} });\n`; break;
-        case 'assert_network_status': s += `  expect([...responses].reverse().find(item => !${sel} || item.url.includes(${sel}))?.status).toBe(${Number(step.value) || 200});\n`; break;
-        case 'assert_no_console_errors': s += `  expect(consoleErrors, consoleErrors.join('\\n')).toEqual([]);\n`; break;
-        case 'assert_a11y': s += `  // Axe: use the canonical QA Flow runner to attach full violation evidence.\n  await page.addScriptTag({ path: require.resolve('axe-core/axe.min.js') });\n  expect((await page.evaluate(() => axe.run())).violations).toEqual([]);\n`; break;
-        case 'assert_performance': s += `  { const budget = JSON.parse(${val}); const nav = await page.evaluate(() => performance.getEntriesByType('navigation')[0]?.duration || 0); if (budget.loadMs != null) expect(nav).toBeLessThanOrEqual(budget.loadMs); }\n`; break;
-        case 'assert_security_headers': s += `  { const cfg = JSON.parse(${val}); const res = await request.fetch(${sel}, { method: 'HEAD', failOnStatusCode: false }); const headers = res.headers(); for (const name of (cfg.required || ['content-security-policy','x-content-type-options','referrer-policy','permissions-policy'])) expect(headers[name.toLowerCase()]).toBeTruthy(); }\n`; break;
-        case 'api_request': {
-          const apiVar = `apiConfig${i + 1}`;
-          s += `  const ${apiVar} = JSON.parse(${val});\n`;
-          s += `  const apiResponse${i + 1} = await request.fetch(${sel}, { method: ${apiVar}.method || 'GET', headers: ${apiVar}.headers, data: ${apiVar}.body, failOnStatusCode: false });\n`;
-          s += `  if (${apiVar}.status != null) expect(apiResponse${i + 1}.status()).toBe(${apiVar}.status);\n`; break;
-        }
-        case 'mock_route': s += `  { const mock = JSON.parse(${val}); await page.route(${sel}, route => mock.abort ? route.abort() : route.fulfill({ status: mock.status || 200, body: typeof mock.body === 'string' ? mock.body : JSON.stringify(mock.body || {}) })); }\n`; break;
-        case 'clear_mocks': s += `  await page.unrouteAll({ behavior: 'wait' });\n`; break;
-        case 'use_flow': s += `  // Reusable flow ${safeCodeComment(step.value)} is expanded by QA Flow runner.\n`; break;
-        case 'wait': s += `  await page.waitForTimeout(${Math.max(0, Math.min(60000, parseInt(step.value, 10) || 1000))});\n`; break;
-        case 'wait_for_element_hidden': s += `  await expect(${scope}.locator(${sel})).toBeHidden();\n`; break;
-        case 'wait_for_text': s += `  await expect(${scope}.getByText(${val}).first()).toBeVisible();\n`; break;
-        case 'wait_for_url_change': s += `  { const previousUrl = page.url(); await page.waitForURL(url => url.toString() !== previousUrl); }\n`; break;
-        case 'wait_for_network_idle': s += `  await page.waitForLoadState('networkidle');\n`; break;
-        default: s += `  throw new Error(${jsLiteral(`Unsupported exported action: ${step.action}`)});\n`;
-      }
-      s += '\n';
-    });
-    s += '});\n';
-    return s;
-  }
-
-  function generateCypressCode(steps, targetUrl) {
-    let s = `describe('Automated QA Flow Test', () => {\n`;
-    s += `  it('should complete all test steps', () => {\n`;
-    s += `    cy.visit(${jsLiteral(targetUrl || 'https://example.com')});\n\n`;
-    steps.forEach((step, i) => {
-      s += `    // Step #${i + 1}: ${safeCodeComment(step.description || step.action)}\n`;
-      const sel = jsLiteral(step.selector || '');
-      const val = jsLiteral(step.value || '');
-      switch (step.action) {
-        case 'click': s += `    cy.get(${sel}).click();\n`; break;
-        case 'fill': s += `    cy.get(${sel}).clear().type(${val});\n`; break;
-        case 'select': s += `    cy.get(${sel}).select(${val});\n`; break;
-        case 'hover': s += `    cy.get(${sel}).trigger('mouseover');\n`; break;
-        case 'assert_visible': s += `    cy.get(${sel}).should('be.visible');\n`; break;
-        case 'assert_text': s += `    cy.get(${sel}).should('contain', ${val});\n`; break;
-        case 'assert_value': s += `    cy.get(${sel}).should('have.value', ${val});\n`; break;
-        case 'assert_url': s += `    cy.url().should('include', ${val});\n`; break;
-        case 'wait': s += `    cy.wait(${Math.max(0, Math.min(60000, parseInt(step.value, 10) || 1000))});\n`; break;
-        case 'wait_for_element_hidden': s += `    cy.get(${sel}).should('not.be.visible');\n`; break;
-      }
-      s += '\n';
-    });
-    s += '  });\n});\n';
-    return s;
-  }
+  // Pure generators moved to sidepanel/codegen.js (loaded before sidepanel.js):
+  //   jsLiteral, safeCodeComment, generatePlaywrightCode, generateCypressCode
+  // They are plain functions in the shared global scope, so callers below can
+  // still invoke generatePlaywrightCode(...) / generateCypressCode(...).
 
   // ========================================
   // UTILITIES
@@ -2752,15 +2660,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `<!doctype html><html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Encrypted QA Report</title><style>body{margin:0;background:#f3f6fa;color:#172033;font:14px system-ui;display:grid;place-items:center;min-height:100vh}.box{width:min(360px,calc(100% - 32px));background:white;border:1px solid #dce2ea;border-radius:16px;padding:24px;box-shadow:0 16px 40px #17203318}h1{font-size:18px;margin:0 0 6px}p{color:#667085}input,button{box-sizing:border-box;width:100%;height:42px;border-radius:9px}input{border:1px solid #cbd5e1;padding:0 12px}button{margin-top:10px;border:0;background:#2563eb;color:white;font-weight:700}.error{color:#b42318;font-size:12px}</style><div class="box"><h1>Protected QA Report</h1><p>Masukkan password untuk membuka report.</p><input id="p" type="password" autocomplete="current-password" autofocus><button id="b">Buka report</button><div id="e" class="error"></div></div><script>const salt='${b64(salt)}',iv='${b64(iv)}',data='${b64(cipher)}',u=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));b.onclick=async()=>{e.textContent='';try{const m=await crypto.subtle.importKey('raw',new TextEncoder().encode(p.value),'PBKDF2',false,['deriveKey']);const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:u(salt),iterations:210000,hash:'SHA-256'},m,{name:'AES-GCM',length:256},false,['decrypt']);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:u(iv)},k,u(data));document.open();document.write(new TextDecoder().decode(plain));document.close()}catch(x){e.textContent='Password salah atau file rusak.'}};p.addEventListener('keydown',x=>{if(x.key==='Enter')b.click()});<\/script></html>`;
   }
 
-  function findHardcodedSecret(value, path = 'suite') {
-    if (!value || typeof value !== 'object') return '';
-    for (const [key, item] of Object.entries(value)) {
-      const nextPath = `${path}.${key}`;
-      if (/(password|passwd|token|secret|authorization|api[-_]?key|cookie|otp|pin)/i.test(key) && typeof item === 'string' && item && !/^\{\{[\w.-]+\}\}$/.test(item) && item !== '[REDACTED]') return nextPath;
-      if (item && typeof item === 'object') { const found = findHardcodedSecret(item, nextPath); if (found) return found; }
-    }
-    return '';
-  }
+  // Pure helpers moved to sidepanel/render.js (loaded before sidepanel.js):
+  //   findHardcodedSecret, escapeHTML — available in the shared global scope.
 
   async function getActiveTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -2776,10 +2677,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }));
   }
 
-  function escapeHTML(str) {
-    if (!str) return '';
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
+  // escapeHTML moved to sidepanel/render.js (shared global scope).
 
   // ==========================================
   // VIDEO SETTINGS UI (inside closure)

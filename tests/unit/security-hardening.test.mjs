@@ -15,6 +15,16 @@ const readBackground = async () => {
   return parts.join('\n');
 };
 
+// sidepanel.js core was split into modules (incl. pure code generators in
+// sidepanel/codegen.js). Concatenate so regex checks find moved symbols.
+const readSidepanel = async () => {
+  const parts = [await read('sidepanel.js')];
+  const modDir = new URL('../../sidepanel/', import.meta.url);
+  const files = (await readdir(modDir)).filter(f => f.endsWith('.js')).sort();
+  for (const f of files) parts.push(await readFile(path.join(modDir.pathname, f), 'utf8'));
+  return parts.join('\n');
+};
+
 test('page monitoring is on-demand and response bodies are opt-in', async () => {
   const [manifest, panel, monitor] = await Promise.all([read('manifest.json'), read('sidepanel.js'), read('injected-monitor.js')]);
   assert.equal(Object.hasOwn(JSON.parse(manifest), 'content_scripts'), false);
@@ -60,7 +70,7 @@ test('monitor lifecycle, CLI redirects, and frame export are hardened', async ()
   const background = await readBackground();
   const monitor = await read('injected-monitor.js');
   const runner = await read('tests/qa-flow.spec.mjs');
-  const panel = await read('sidepanel.js');
+  const panel = await readSidepanel();
   assert.match(background, /case 'STOP_MONITOR'/);
   assert.match(background, /disableMonitor\(tabId\)/);
   assert.match(monitor, /if \(!monitorActive\) return originalFetch/);

@@ -1437,6 +1437,10 @@
   <script src="report-template.js"></script>
   <script src="shared/contracts.js"></script>
   <script src="i18n.js"></script>
+  <!-- Pure helpers & code generators: MUST load before sidepanel.js so the core
+       (and modules) can call escapeHTML/findHardcodedSecret/generatePlaywrightCode. -->
+  <script src="sidepanel/render.js"></script>
+  <script src="sidepanel/codegen.js"></script>
   <!-- Core controller (block 1): defines window.QAFlow bridge + shared helpers.
        MUST load first so later modules can re-bind QAFlow helpers. -->
   <script src="sidepanel.js"></script>
