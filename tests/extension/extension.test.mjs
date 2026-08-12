@@ -679,3 +679,36 @@ test('video settings UI opens and saves from the extracted module', async () => 
     assert.equal(saved.apiKey, 'SECRET_KEY');
   } finally { await context.close(); }
 });
+
+test('recording toggles via the extracted button handler', async () => {
+  const server = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'text/html' });
+    response.end('<!doctype html><title>Rec UI Fixture</title><button id="go" type="button">Go</button>');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const extensionPath = path.resolve('.');
+  let context;
+  try {
+    context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    const target = await context.newPage();
+    await target.goto(baseUrl + '/');
+    await target.bringToFront();
+
+    // DOM click (no focus steal) so getActiveTab() still sees the target page.
+    await sidepanel.evaluate(() => document.getElementById('btnRecord').click());
+    await sidepanel.waitForFunction(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, response => resolve(response?.data?.isRecording === true))), null, { timeout: 10000 });
+    assert.equal(await sidepanel.locator('#btnRecord.recording').count(), 1, 'Record button shows recording state');
+    await sidepanel.evaluate(() => document.getElementById('btnRecord').click());
+    await sidepanel.waitForFunction(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, response => resolve(response?.data?.isRecording === false))), null, { timeout: 10000 });
+    assert.equal(await sidepanel.locator('#btnRecord.recording').count(), 0, 'Record button clears recording state');
+  } finally {
+    await context?.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});

@@ -272,7 +272,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     getAiSettingsState: () => currentState.aiSettings,
     setAiSettingsState: (settings) => { currentState.aiSettings = settings; },
     getVideoSettingsState: () => currentState.videoSettings,
-    setVideoSettingsState: (settings) => { currentState.videoSettings = settings; }
+    setVideoSettingsState: (settings) => { currentState.videoSettings = settings; },
+    // Recording UI (sidepanel/recording-ui.js)
+    getActiveTab,
+    refreshRecorderReadiness,
+    renderRecorderReadiness,
+    updateRecordingUI,
+    fetchInitialState,
+    openRecordingReview,
+    showVideoPreviewUI,
+    isRecording: () => currentState.isRecording,
+    setIsRecording: (value) => { currentState.isRecording = value; },
+    isExecutionRunning: () => currentState.executionResults?.status === 'RUNNING'
   });
 
   function renderRecorderReadiness(state = recorderReadiness, error = '') {
@@ -1319,73 +1330,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     render();
   }
 
-  btnRecord.addEventListener('click', async () => {
-    if (currentState.executionResults?.status === 'RUNNING') {
-      return showBentoAlert('Perhatian', 'Hentikan eksekusi tes (Run) terlebih dahulu sebelum mulai merekam.', '⚠️');
-    }
-
-    const activeTab = await getActiveTab();
-    if (!activeTab?.id) return showBentoAlert('Perhatian', 'Buka tab website terlebih dahulu untuk mulai merekam.', '⚠️');
-
-    if (!currentState.isRecording) {
-      // Readiness is advisory. Live/video pages may never reach a traditional
-      // completed state, so START_RECORDING performs the authoritative handshake.
-      await refreshRecorderReadiness().catch(() => false);
-      renderRecorderReadiness('checking', 'Menghubungkan recorder ke DOM yang sudah tersedia…');
-      chrome.runtime.sendMessage({ action: 'START_RECORDING', payload: { tabId: activeTab.id } }, (res) => {
-        if (chrome.runtime.lastError) return showBentoAlert('Recorder gagal', chrome.runtime.lastError.message, '⚠️');
-        if (res?.status === 'SUCCESS') { currentState.isRecording = true; updateRecordingUI(true); }
-        else showBentoAlert('Recorder gagal', res?.error || 'Recorder tidak dapat diaktifkan pada halaman ini.', '⚠️');
-      });
-    } else {
-      chrome.runtime.sendMessage({ action: 'STOP_RECORDING' }, (res) => {
-        if (res?.status === 'SUCCESS') { currentState.isRecording = false; updateRecordingUI(false); fetchInitialState(); openRecordingReview(res.recording); }
-      });
-    }
-  });
-
-  const btnRecordScreen = document.getElementById('btnRecordScreen');
-  const btnRecordScreenText = document.getElementById('btnRecordScreenText');
-
-  btnRecordScreen?.addEventListener('click', async () => {
-    const isRecordingScreen = btnRecordScreen.classList.contains('recording');
-
-    if (!isRecordingScreen) {
-      if (currentState.isRecording || currentState.executionResults?.status === 'RUNNING') {
-        return showBentoAlert('Perhatian', 'Pastikan tidak ada tes atau perekaman step yang sedang berjalan.', '⚠️');
-      }
-
-      try {
-        const recordPromise = startVideoRecording();
-        btnRecordScreen.classList.add('recording');
-        if (btnRecordScreenText) btnRecordScreenText.textContent = 'Merekam';
-        await recordPromise;
-      } catch (err) {
-        showBentoAlert('Gagal', 'Tidak bisa merekam layar: ' + err.message, '❌');
-        btnRecordScreen.classList.remove('recording');
-        if (btnRecordScreenText) btnRecordScreenText.textContent = 'Layar';
-      }
-    } else {
-      btnRecordScreen.classList.remove('recording');
-      if (btnRecordScreenText) btnRecordScreenText.textContent = 'Layar';
-
-      const settings = currentState.videoSettings || {};
-      const hasUploadUrl = !!settings.uploadUrl;
-      
-      try {
-        const result = await stopVideoRecordingAndUpload(
-          settings.uploadUrl,
-          settings.apiKey
-        );
-        
-        if (result) {
-          showVideoPreviewUI(result.blob, result, hasUploadUrl);
-        }
-      } catch (err) {
-        showBentoAlert('Upload Gagal', err.message, '❌');
-      }
-    }
-  });
+  // RECORDING UI — moved to sidepanel/recording-ui.js (reads window.QAFlow.ui)
+  // btnRecord + btnRecordScreen click handlers live there; render helpers stay here.
 
   btnRunSuite.addEventListener('click', async event => {
     if (currentState.isRecording) {
