@@ -284,3 +284,45 @@ test('monitor captures console and failed network events end-to-end', async () =
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+test('ai copilot generates and renders steps from a mocked provider response', async () => {
+  const extensionPath = path.resolve('.');
+  const context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+  try {
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const page = await context.newPage();
+    await page.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    await page.getByText('PRO v4.3').waitFor();
+
+    // Stub the AI key (real key never needed) and mock the provider fetch so the
+    // send flow is fully exercised in CI without hitting a live AI API.
+    await page.evaluate(() => chrome.storage.local.set({
+      qa_ai_settings: { provider: 'gemini', model: 'gemini-2.0-flash', apiKey: 'TEST_KEY' }
+    }));
+    await page.evaluate(() => {
+      window.fetch = async (url) => {
+        const reply = 'Berikut skenario ujinya:\n[{"action":"click","selector":"#login","description":"Klik login"},{"action":"fill","selector":"input[type=password]","value":"secret","description":"Isi password"}]';
+        if (String(url).includes('generativelanguage')) {
+          return { ok: true, status: 200, statusText: 'OK', json: async () => ({ candidates: [{ content: { parts: [{ text: reply }] } }] }) };
+        }
+        return { ok: false, status: 404, statusText: 'Not Found', json: async () => ({}) };
+      };
+    });
+
+    await page.locator('#tab-btn-copilot').click();
+    await page.locator('#copilotInput').fill('Buatkan skenario test login');
+    await page.locator('#btnSendCopilot').click();
+
+    // User message + generated step card with the three action buttons.
+    await page.locator('.copilot-action-group').waitFor({ timeout: 15000 });
+    await page.getByText('2 Langkah Tes Di-generate').waitFor();
+    assert.equal(await page.locator('.copilot-step-item').count(), 2);
+    assert.equal(await page.locator('.copilot-action-btn').count(), 3);
+    const btnTexts = await page.locator('.copilot-action-btn span').allInnerTexts();
+    assert.deepEqual(btnTexts.sort(), ['Jalankan Saja', 'Simpan & Jalankan', 'Simpan ke Steps'].sort());
+    // Send button must re-enable after generation.
+    assert.equal(await page.locator('#btnSendCopilot').isEnabled(), true);
+  } finally { await context.close(); }
+});
