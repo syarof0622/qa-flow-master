@@ -625,3 +625,31 @@ test('bug exporter modal renders and exports a report to slack', async () => {
     assert.equal(savedEndpoint.qa_export_endpoint, 'https://hooks.slack.com/services/T000/B000/XXXX');
   } finally { await context.close(); }
 });
+
+test('ai settings UI opens from the extracted module', async () => {
+  const extensionPath = path.resolve('.');
+  const context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+  try {
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+
+    // Open AI Settings via the header button (on the Copilot tab); the extracted
+    // module must render the form.
+    await sidepanel.evaluate(() => document.getElementById('tab-btn-copilot').click());
+    await sidepanel.locator('#btnOpenAiSettingsDirect').click();
+    await sidepanel.locator('#aiProviderSelect').waitFor({ timeout: 10000 });
+    assert.equal(await sidepanel.locator('#aiProviderSelect option').count(), 3, 'Three providers');
+    assert.equal(await sidepanel.locator('#aiModelSelect option').count() >= 2, true, 'Model list populated');
+    // Saving must persist qa_ai_settings locally (no API key needed to render).
+    await sidepanel.locator('#aiProviderSelect').selectOption('gemini');
+    await sidepanel.locator('#aiApiKey').fill('TEST_KEY_XYZ');
+    await sidepanel.locator('#btnSaveAiSettings').click();
+    await sidepanel.locator('#qaWorkspaceOverlay').waitFor({ state: 'hidden', timeout: 10000 });
+    const saved = await sidepanel.evaluate(() => new Promise(resolve => chrome.storage.local.get('qa_ai_settings', resolve)));
+    assert.equal(saved.qa_ai_settings.provider, 'gemini');
+    assert.equal(saved.qa_ai_settings.apiKey, 'TEST_KEY_XYZ');
+  } finally { await context.close(); }
+});
