@@ -390,6 +390,9 @@ test('ai sharing agent drives the live page and produces steps', async () => {
     await target.waitForURL(/\/login$/, { timeout: 10000 });
     await target.locator('#email').waitFor({ state: 'visible', timeout: 8000 });
     assert.equal(await sidepanel.locator('#btnSendCopilot').isEnabled(), true);
+    // The agent's activity log must be visible in the chat (what it did on-page).
+    await sidepanel.locator('.agent-activity').waitFor();
+    assert.match(await sidepanel.locator('.agent-activity').innerText(), /click|#login-link/);
     // Cleanup: disable agent mode for other tests.
     await sidepanel.evaluate(() => chrome.storage.local.set({ qa_agent_settings: { enabled: false } }));
   } finally {

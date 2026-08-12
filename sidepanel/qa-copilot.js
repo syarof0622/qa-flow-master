@@ -198,6 +198,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     copilotChatArea.innerHTML = '';
     currentThread.messages.forEach(msg => {
+      if (Array.isArray(msg.activity) && msg.activity.length) {
+        appendAgentActivity(msg.activity);
+      }
       if (msg.steps && Array.isArray(msg.steps) && msg.steps.length > 0) {
         appendCopilotStepCardMsg(msg.cleanReply || msg.text, msg.steps, false);
       } else if (msg.sender === 'error') {
@@ -326,6 +329,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     const errSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
     textDiv.innerHTML = `${errSvg}<span>Error: ${escapeHTML(errorText)}</span>`;
     bubble.appendChild(textDiv);
+    wrapper.appendChild(bubble);
+    copilotChatArea.appendChild(wrapper);
+    copilotChatArea.scrollTop = copilotChatArea.scrollHeight;
+  }
+
+  // Compact log of what the AI Sharing Agent did on the live page (visible in chat).
+  function appendAgentActivity(history) {
+    if (!Array.isArray(history) || !history.length || !copilotChatArea) return;
+    const isEn = (window.QAI18n?.getLanguage?.() || 'id') === 'en';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'copilot-msg system';
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble agent-activity';
+    const rows = history
+      .map(h => `<div class="agent-activity-row">${escapeHTML(String(h))}</div>`)
+      .join('');
+    bubble.innerHTML = `<div class="agent-activity-title">${escapeHTML(isEn ? 'Agent Activity' : 'Aktivitas Agent')}</div>${rows}`;
     wrapper.appendChild(bubble);
     copilotChatArea.appendChild(wrapper);
     copilotChatArea.scrollTop = copilotChatArea.scrollHeight;
@@ -696,6 +716,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             text: cleanReply,
             cleanReply,
             steps: agentSteps,
+            activity: agentResult?.history,
             timestamp: new Date().toISOString()
           });
           currentThread.updatedAt = new Date().toISOString();
@@ -703,6 +724,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           window.QAFlow.sendRuntimeMessage('SAVE_COPILOT_THREAD', { thread: currentThread });
           renderThreadSelector();
         }
+        appendAgentActivity(agentResult?.history);
         appendCopilotStepCardMsg(cleanReply, agentSteps, false);
         return;
       }

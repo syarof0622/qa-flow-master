@@ -197,7 +197,7 @@ RULES:
     agentToggle.addEventListener('change', () => { setAgentEnabled(agentToggle.checked); });
     const wrap = agentToggle.closest('.agent-mode-toggle');
     if (wrap) wrap.title = s.enabled
-      ? 'AI Sharing Agent aktif — Copilot akan menjelajahi halaman otomatis.'
+      ? 'AI Sharing Agent aktif — Copilot akan menjelajahi halaman otomatis (lampiran file/gambar diabaikan).'
       : 'AI Sharing Agent nonaktif — Copilot menganalisis halaman sekali (biasa).';
   }
 
