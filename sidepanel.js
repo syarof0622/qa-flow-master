@@ -283,7 +283,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     showVideoPreviewUI,
     isRecording: () => currentState.isRecording,
     setIsRecording: (value) => { currentState.isRecording = value; },
-    isExecutionRunning: () => currentState.executionResults?.status === 'RUNNING'
+    isExecutionRunning: () => currentState.executionResults?.status === 'RUNNING',
+    // QA governance workspace actions (sidepanel/qa-governance.js)
+    renderStructuredForm,
+    getActiveSuiteObj,
+    downloadFile,
+    getBackupSnapshot: () => ({
+      schemaVersion: 2,
+      exportedAt: new Date().toISOString(),
+      suites: currentState.suites || [],
+      activeSuiteId: currentState.activeSuiteId,
+      environments: currentState.environments || [],
+      datasets: currentState.datasets || [],
+      defects: currentState.defects || [],
+      exploratorySessions: currentState.exploratorySessions || [],
+      releaseSignoffs: currentState.releaseSignoffs || [],
+      suiteRevisions: currentState.suiteRevisions || [],
+      auditTrail: currentState.auditTrail || [],
+      visualBaselines: currentState.visualBaselines || {}
+    })
   });
 
   function renderRecorderReadiness(state = recorderReadiness, error = '') {
@@ -1406,67 +1424,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (executionBanner.classList.contains('is-failed') && !event.target.closest('button')) openFailureInspector();
   });
 
-  btnAddExploration?.addEventListener('click', () => {
-    openQaWorkspace('Exploratory session', 'Session-based testing');
-    renderStructuredForm([
-      { name: 'charter', label: 'Charter', wide: true, required: true },
-      { name: 'tester', label: 'Tester' },
-      { name: 'durationMinutes', label: 'Duration (minutes)', type: 'number', defaultValue: 30 },
-      { name: 'notes', label: 'Notes', type: 'textarea', wide: true },
-      { name: 'evidence', label: 'Evidence references', type: 'textarea', array: true, wide: true }
-    ], { durationMinutes: 30 }, async session => {
-      if (!session.charter.trim()) throw new Error('Charter wajib diisi.');
-      const response = await sendRuntimeMessage('ADD_EXPLORATORY_SESSION', { session });
-      if (response?.status !== 'SUCCESS') throw new Error(response?.error || 'Session gagal disimpan.');
-      closeQaWorkspace();
-      fetchInitialState();
-    });
-  });
-
-  btnReleaseSignoff?.addEventListener('click', () => {
-    const suite = getActiveSuiteObj();
-    openQaWorkspace('Release sign-off', 'Quality gate');
-    renderStructuredForm([
-      { name: 'release', label: 'Release', required: true },
-      { name: 'approver', label: 'Approver', required: true },
-      { name: 'approved', label: 'Decision', type: 'select', options: ['APPROVED', 'REJECTED'] },
-      { name: 'minimumCoverage', label: 'Minimum coverage', type: 'number', defaultValue: 80 },
-      { name: 'maximumFlaky', label: 'Maximum flaky', type: 'number', defaultValue: 0 },
-      { name: 'maximumSlow', label: 'Maximum slow steps', type: 'number', defaultValue: 0 },
-      { name: 'requireCleanRuntime', label: 'Clean runtime required', type: 'select', options: ['YES', 'NO'] },
-      { name: 'overrideReason', label: 'Override reason', type: 'textarea', wide: true }
-    ], { release: suite?.release || '', approved: 'APPROVED', minimumCoverage: 80, maximumFlaky: 0, maximumSlow: 0, requireCleanRuntime: 'YES' }, async data => {
-      if (!data.release.trim() || !data.approver.trim()) throw new Error('Release dan approver wajib diisi.');
-      const response = await sendRuntimeMessage('CREATE_RELEASE_SIGNOFF', { signoff: { ...data, approved: data.approved === 'APPROVED', requireCleanRuntime: data.requireCleanRuntime === 'YES' } });
-      if (response?.status !== 'SUCCESS') throw new Error(`${response?.error || 'Sign-off ditolak.'} Run: ${response?.gates?.passingRun ? 'pass' : 'fail'}, coverage: ${response?.gates?.coverage ?? 0}%, blocker: ${response?.gates?.blockerCount ?? 0}, flaky: ${response?.gates?.flakyCount ?? 0}, slow: ${response?.gates?.slowCount ?? 0}, runtime: ${response?.gates?.criticalRuntimeIssues ?? 0}.`);
-      closeQaWorkspace();
-      fetchInitialState();
-      showBentoAlert('Sign-off tersimpan', 'Quality gate dan keputusan release tercatat.', '✓');
-    }, { saveText: 'Verifikasi' });
-  });
-
-  btnSuiteVersions?.addEventListener('click', () => {
-    const suite = getActiveSuiteObj();
-    const revisions = (currentState.suiteRevisions || []).filter(item => item.suiteId === suite?.id);
-    openQaWorkspace('Suite versions', 'Restore & audit');
-    qaWorkspaceBody.innerHTML = revisions.length ? `<div class="qa-board-list">${revisions.map(item => `<article class="qa-board-item"><div class="qa-board-item-head"><div><strong>${escapeHTML(item.reason || 'Revision')}</strong><p>${new Date(item.timestamp).toLocaleString(window.QAI18n?.locale?.() || 'id-ID')}</p></div><button type="button" class="qa-item-btn qa-restore-revision" data-id="${escapeHTML(item.id)}">Restore</button></div><div class="qa-board-meta"><span class="qa-mini-tag">${item.suite?.steps?.length || 0} step</span><span class="qa-mini-tag">${escapeHTML(item.suite?.name || suite?.name || '')}</span></div></article>`).join('')}</div>` : '<div class="bento-empty-state"><p>Belum ada versi.</p><span>Versi dibuat otomatis ketika suite berubah.</span></div>';
-    qaWorkspaceBody.querySelectorAll('.qa-restore-revision').forEach(button => button.addEventListener('click', async () => {
-      const ok = await showBentoConfirm('Restore suite', 'Kembalikan suite ke versi ini? Kondisi sekarang tetap disimpan sebagai revision.', { confirmText: 'Restore' });
-      if (!ok) return;
-      const response = await sendRuntimeMessage('RESTORE_SUITE_REVISION', { revisionId: button.dataset.id });
-      if (response?.status !== 'SUCCESS') return showBentoAlert('Restore gagal', response?.error || 'Revision tidak dapat dipulihkan.', '⚠️');
-      closeQaWorkspace();
-      fetchInitialState();
-      announce('Suite berhasil dipulihkan');
-    }));
-  });
-
-  btnWorkspaceBackup?.addEventListener('click', () => {
-    const backup = { schemaVersion: 2, exportedAt: new Date().toISOString(), suites: currentState.suites || [], activeSuiteId: currentState.activeSuiteId, environments: currentState.environments || [], datasets: currentState.datasets || [], defects: currentState.defects || [], exploratorySessions: currentState.exploratorySessions || [], releaseSignoffs: currentState.releaseSignoffs || [], suiteRevisions: currentState.suiteRevisions || [], auditTrail: currentState.auditTrail || [], visualBaselines: currentState.visualBaselines || {} };
-    const secretPath = findHardcodedSecret(backup);
-    if (secretPath) return showBentoAlert('Backup diblokir', `Data sensitif terdeteksi di ${secretPath}.`, '⚠️');
-    downloadFile(JSON.stringify(backup, null, 2), `qa-workspace-backup-${Date.now()}.json`, 'application/json');
-  });
+  // QA GOVERNANCE WORKSPACE ACTIONS — moved to sidepanel/qa-governance.js
+  // (btnAddExploration, btnReleaseSignoff, btnSuiteVersions, btnWorkspaceBackup)
 
   // ========================================
   // EXPERT QA ACTIONS

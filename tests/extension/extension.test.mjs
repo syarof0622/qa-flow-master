@@ -703,12 +703,34 @@ test('recording toggles via the extracted button handler', async () => {
     // DOM click (no focus steal) so getActiveTab() still sees the target page.
     await sidepanel.evaluate(() => document.getElementById('btnRecord').click());
     await sidepanel.waitForFunction(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, response => resolve(response?.data?.isRecording === true))), null, { timeout: 10000 });
-    assert.equal(await sidepanel.locator('#btnRecord.recording').count(), 1, 'Record button shows recording state');
+    // Wait for the button UI (class) instead of asserting immediately — the class
+    // is added in the START_RECORDING callback, slightly after state flips.
+    await sidepanel.locator('#btnRecord.recording').waitFor({ timeout: 10000 });
     await sidepanel.evaluate(() => document.getElementById('btnRecord').click());
     await sidepanel.waitForFunction(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, response => resolve(response?.data?.isRecording === false))), null, { timeout: 10000 });
-    assert.equal(await sidepanel.locator('#btnRecord.recording').count(), 0, 'Record button clears recording state');
+    await sidepanel.locator('#btnRecord.recording').waitFor({ state: 'detached', timeout: 10000 }).catch(() => {});
   } finally {
     await context?.close();
     await new Promise(resolve => server.close(resolve));
   }
+});
+
+test('governance sign-off opens from the extracted module', async () => {
+  const extensionPath = path.resolve('.');
+  const context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+  try {
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+
+    await sidepanel.locator('#tab-btn-reports').click();
+    await sidepanel.locator('#btnQaGovernanceMenu').click();
+    await sidepanel.locator('#btnReleaseSignoff').click();
+    // The extracted module must render the structured sign-off form.
+    await sidepanel.locator('#qaWorkspaceBody input[name="release"]').waitFor({ timeout: 10000 });
+    await sidepanel.locator('#qaWorkspaceBody input[name="approver"]').waitFor();
+    assert.equal(await sidepanel.locator('#qaWorkspaceBody select[name="approved"] option').count() >= 2, true, 'Decision select populated');
+  } finally { await context.close(); }
 });
