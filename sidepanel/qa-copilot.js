@@ -33,8 +33,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function getAiSettings() {
     const local = await new Promise(resolve => chrome.storage.local.get(['qa_ai_settings', 'appState'], resolve));
+    // The real key lives only in qa_ai_settings; appState.aiSettings is just
+    // provider/model metadata (the background strips apiKey before storing).
     if (local?.qa_ai_settings?.apiKey) return local.qa_ai_settings;
-    if (local?.appState?.aiSettings?.apiKey) return local.appState.aiSettings;
     const state = await new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, res => resolve(res?.data || {})));
     return state.aiSettings || { provider: 'gemini', apiKey: '' };
   }

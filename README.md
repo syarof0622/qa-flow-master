@@ -2,6 +2,88 @@
 
 Chrome recorder plus a production Playwright automation runner. A suite recorded in the extension can be exported, schema-validated, executed against datasets, and used as a CI quality gate.
 
+## Features
+
+- **Recorder & authoring** — record real interactions, auto-generate resilient CSS selectors, or author steps manually (30+ actions)
+- **AI Copilot** — generate test scenarios from natural language or screenshots, with multimodal attachments and persistent threads (Gemini / Claude / DeepSeek)
+- **AI data generator** — create dataset rows from a prompt
+- **Bug Exporter** — one-click export to Slack, Teams, GitHub, Linear, and Jira (JAM-style)
+- **Visual & API testing** — screenshot baselines, network/console/security assertions, API requests, mock routes
+- **QA Readiness** — requirements, defects, risk coverage, release sign-off, governance audit trail
+- **Quality gate CI** — schema validation, secret scanning, unsafe-HTTP and dependency checks, flake scoring
+- **Bento UI** — polished dark/light theme, fully responsive, documented in [UI-UX guide](docs/ui-ux-guide.md)
+
+## Architecture
+
+Modular monolith for Chrome MV3: the side panel, background worker, and CSS are split into small single-purpose modules so fixing one system does not ripple into others. A shared `window.QAFlow` bridge exposes block-1 helpers to later modules, and a `qaState` service layer decouples background modules from the raw `appState` shape.
+
+```mermaid
+graph TD
+  subgraph UI["Side Panel (sidepanel.html)"]
+    CORE["sidepanel.js · core"]
+    COPILOT["qa-copilot.js · AI chat"]
+    AIDATA["ai-data-generator.js"]
+    JAM["jam-killer.js · Bug Exporter/HAR/Annotator"]
+    PURE["render.js + codegen.js · pure helpers"]
+    I18N["i18n.js"]
+    PURE --> CORE
+    CORE -- "window.QAFlow bridge" --> COPILOT
+    CORE -- "window.QAFlow bridge" --> AIDATA
+    CORE -- "window.QAFlow bridge" --> JAM
+  end
+
+  subgraph BG["Service Worker (background.js router)"]
+    STATE["state.js · appState + redaction"]
+    SVC["services.js · qaState API"]
+    CLOUD["cloud.js · Supabase sync/audit"]
+    INJ["injection.js · monitor/screenshots"]
+    RUN["runner.js · suite execution"]
+    NET["network.js · VPN/geo"]
+    HND["handlers.js · per-action logic"]
+    STATE --> SVC
+    SVC --> CLOUD
+    SVC --> RUN
+    SVC --> HND
+  end
+
+  subgraph SHARED["Shared"]
+    CTR["contracts.js · message contract"]
+    AI["ai-client.js · provider clients"]
+  end
+
+  subgraph CI["CLI Runner (Node/Playwright)"]
+    RID["qa-flow-runner.mjs"]
+    VAL["validate-suite.mjs · schema"]
+    SEC["security-gate.mjs"]
+    LIB["lib/ · action-registry, safe-network, suite-loader"]
+  end
+
+  COPILOT --> AI
+  AIDATA --> AI
+  CORE --> CTR
+  BG --> CTR
+  UI -- "chrome.runtime messages" --> BG
+  CI --> LIB
+```
+
+## Repository structure
+
+```
+background.js          Service Worker router (importScripts all modules)
+background/*.js        state, services, cloud, injection, runner, network, handlers
+sidepanel.html         Side panel markup (loads modules in dependency order)
+sidepanel.js           Side panel core (UI logic + window.QAFlow bridge)
+sidepanel/*.js         qa-copilot, ai-data-generator, jam-killer, render, codegen
+shared/                contracts.js (message/step contract), ai-client.js
+css/*.css              Bento design system (11 partials) imported by sidepanel.css
+runner/                CLI/CI runner: validate-suite, security-gate, qa-flow-runner, lib/
+suites/                Example suite (smoke.json)
+tests/unit             Node unit tests (contracts, security, codegen, qaState, ai-client, module-paths)
+tests/extension        Chromium e2e tests (boots the real unpacked extension)
+tests/qa-flow.spec.mjs Playwright engine implementing every registered action
+docs/                  Expert guide + UI-UX guide
+```
+
 ## Quick start
 
 ```bash
@@ -71,3 +153,24 @@ Generate reusable login state with `npm run qa:auth`. The required environment v
 The extension remains local-first and does not require a user account. Governance records are included in suite JSON exports.
 
 Optional Supabase cloud sync and cPanel video upload are configured in Settings; see [Cloud sync (Supabase) and video storage (cPanel)](docs/expert-guide.md#cloud-sync-supabase-and-video-storage-cpanel) for the required one-time Supabase migration and server-side key setup.
+
+## Development & testing
+
+```bash
+npm run check          # syntax-check every module
+npm test               # unit tests (node --test tests/unit/*.test.mjs)
+node --test tests/extension/extension.test.mjs   # e2e: boots the real extension in Chromium
+```
+
+Unit tests cover the message/step contract, background redaction, the `qaState` service layer, pure codegen helpers, AI provider clients (with mocked fetch — no API key needed), and module load-order/path resolution.
+
+## Security notes
+
+- **API keys are local-only**: provider keys live in a dedicated `qa_ai_settings` storage key and never enter `appState` (the Supabase sync payload).
+- **Cloud redaction**: credentials in Copilot threads, session secrets, and video settings are redacted before any cloud push.
+- **Prompt-injection defense**: scraped DOM is wrapped as untrusted context and the model is instructed to ignore page text as instructions.
+- **Safe network**: `secureFetch` blocks private-network targets unless explicitly allowed; redirect targets are validated.
+- **Hardened step ingestion**: AI-generated steps are validated against a shared action contract on both the side panel and the background worker.
+- **No `eval`/`new Function`** and all user/AI content passes through `escapeHTML`/markdown-escaping before `innerHTML`.
+
+See [Expert guide](docs/expert-guide.md) for authoring, CI patterns, and advanced governance.
