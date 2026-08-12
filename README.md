@@ -74,7 +74,7 @@ background.js          Service Worker router (importScripts all modules)
 background/*.js        state, services, cloud, injection, runner, network, handlers
 sidepanel.html         Side panel markup (loads modules in dependency order)
 sidepanel.js           Side panel core (UI logic + window.QAFlow bridge)
-sidepanel/*.js         qa-copilot, ai-data-generator, jam-killer, agent-protocol, ai-agent, render, codegen
+sidepanel/*.js         qa-copilot, ai-agent, ai-settings, video-settings, recording-ui, qa-governance, ip-modal, ai-data-generator, jam-killer, agent-protocol, render, codegen
 shared/                contracts.js (message/step contract), ai-client.js
 css/*.css              Bento design system (11 partials) imported by sidepanel.css
 runner/                CLI/CI runner: validate-suite, security-gate, qa-flow-runner, lib/
