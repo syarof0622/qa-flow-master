@@ -525,3 +525,103 @@ test('ai sharing agent can be cancelled from the chat mid-run', async () => {
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+test('authoring steps and running a suite completes with passing results', async () => {
+  const server = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'text/html' });
+    response.end('<!doctype html><title>Run Fixture</title><input id="name" name="name"><button id="save" type="button" onclick="document.getElementById(\'result\').textContent=\'Saved: \'+document.getElementById(\'name\').value">Save</button><div id="result"></div>');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const extensionPath = path.resolve('.');
+  let context;
+  try {
+    context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    const target = await context.newPage();
+    await target.goto(baseUrl + '/');
+    await target.bringToFront();
+    const targetTabId = await sidepanel.evaluate(async url => (await chrome.tabs.query({})).find(item => item.url === url)?.id, baseUrl + '/');
+
+    // Author three steps into the active suite.
+    const authored = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'UPDATE_STEPS',
+      payload: { steps: [
+        { action: 'fill', selector: '#name', value: 'Budi', description: 'Isi nama' },
+        { action: 'click', selector: '#save', description: 'Klik simpan' },
+        { action: 'assert_text', selector: '#result', value: 'Saved: Budi', description: 'Cek hasil' }
+      ] }
+    }, resolve)));
+    assert.equal(authored.status, 'SUCCESS');
+
+    // Run the suite against the live tab.
+    const run = await sidepanel.evaluate(tabId => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'RUN_TEST_SUITE',
+      payload: { tabId, delay: 0, stopOnError: true, autoRetryCount: 0, scope: {} }
+    }, resolve)), targetTabId);
+    assert.equal(run.status, 'SUCCESS');
+
+    // Wait for completion and assert all steps passed.
+    await sidepanel.waitForFunction(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, response => resolve(response?.data?.executionResults?.status === 'COMPLETED'))), null, { timeout: 20000 });
+    const results = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, response => resolve(response?.data?.executionResults))));
+    assert.equal(results.status, 'COMPLETED');
+    assert.equal(results.totalSteps, 3);
+    assert.equal(results.failedSteps, 0);
+    assert.equal(results.passedSteps, 3);
+    // The live page must reflect the executed steps.
+    assert.equal(await target.locator('#result').innerText(), 'Saved: Budi');
+    // No failure banner.
+    assert.equal(await sidepanel.locator('#executionBanner.is-failed').count(), 0);
+  } finally {
+    await context?.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test('bug exporter modal renders and exports a report to slack', async () => {
+  const extensionPath = path.resolve('.');
+  const context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+  try {
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+
+    // Mock the webhook POST so the export succeeds without a real endpoint.
+    await sidepanel.evaluate(() => {
+      window.fetch = async (url) => {
+        if (String(url).includes('hooks.slack.com')) {
+          return { ok: true, status: 200, statusText: 'OK', json: async () => ({ ok: true }) };
+        }
+        return { ok: false, status: 404, statusText: 'Not Found', json: async () => ({}) };
+      };
+    });
+
+    // Open the exporter via the QA governance menu (the banner button is hidden
+    // until there is a bug/failure to export).
+    await sidepanel.locator('#tab-btn-reports').click();
+    await sidepanel.locator('#btnQaGovernanceMenu').click();
+    await sidepanel.locator('#btnExportBugMenu').click();
+    await sidepanel.locator('#bentoExportBugModal:not(.hidden)').waitFor();
+    assert.equal(await sidepanel.locator('#exportBugTitle').innerText(), 'Bug Exporter');
+    assert.equal(await sidepanel.locator('.export-platform').count(), 5, 'Five platform chips');
+    assert.equal(await sidepanel.locator('.export-platform.is-active').getAttribute('data-platform'), 'slack');
+
+    await sidepanel.locator('#exportBugTitleInput').fill('Login gagal di halaman utama');
+    await sidepanel.locator('#exportBugDescInput').fill('Repro: isi email/password lalu klik masuk.');
+    await sidepanel.locator('#exportEndpointInput').fill('https://hooks.slack.com/services/T000/B000/XXXX');
+    await sidepanel.locator('#btnSendBugReport').click();
+
+    // Success path closes the modal and re-enables the send button.
+    await sidepanel.locator('#bentoExportBugModal').waitFor({ state: 'hidden', timeout: 10000 });
+    assert.equal(await sidepanel.locator('#btnSendBugReport').isEnabled(), true);
+    assert.equal(await sidepanel.locator('#btnSendBugReport').innerText(), '🚀 Kirim Laporan Bug');
+    const savedEndpoint = await sidepanel.evaluate(() => new Promise(resolve => chrome.storage.local.get('qa_export_endpoint', resolve)));
+    assert.equal(savedEndpoint.qa_export_endpoint, 'https://hooks.slack.com/services/T000/B000/XXXX');
+  } finally { await context.close(); }
+});
