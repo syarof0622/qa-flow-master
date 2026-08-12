@@ -1,0 +1,35 @@
+export const ACTIONS = Object.freeze({
+  click: { target: true, value: false, category: 'interaction' },
+  fill: { target: true, value: true, category: 'interaction' },
+  select: { target: true, value: true, category: 'interaction' },
+  hover: { target: true, value: false, category: 'interaction' },
+  assert_visible: { target: true, value: false, category: 'assertion' },
+  assert_enabled: { target: true, value: false, category: 'assertion' },
+  assert_disabled: { target: true, value: false, category: 'assertion' },
+  assert_checked: { target: true, value: false, category: 'assertion' },
+  assert_unchecked: { target: true, value: false, category: 'assertion' },
+  assert_text: { target: true, value: true, category: 'assertion' },
+  assert_value: { target: true, value: true, category: 'assertion' },
+  assert_attribute: { target: true, value: true, category: 'assertion' },
+  assert_css: { target: true, value: true, category: 'assertion' },
+  assert_count: { target: true, value: true, category: 'assertion' },
+  assert_url: { target: false, value: true, category: 'assertion' },
+  assert_screenshot: { target: false, value: false, category: 'visual' },
+  assert_network_status: { target: false, value: true, category: 'network' },
+  assert_no_console_errors: { target: false, value: false, category: 'network' },
+  assert_a11y: { target: false, value: true, category: 'quality' },
+  assert_performance: { target: false, value: true, category: 'quality' },
+  assert_security_headers: { target: true, value: true, category: 'security' },
+  api_request: { target: true, value: true, category: 'api' },
+  mock_route: { target: true, value: true, category: 'network' },
+  clear_mocks: { target: false, value: false, category: 'network' },
+  use_flow: { target: false, value: true, category: 'flow' },
+  wait: { target: false, value: true, category: 'wait' },
+  wait_for_element_hidden: { target: true, value: false, category: 'wait' },
+  wait_for_text: { target: false, value: true, category: 'wait' },
+  wait_for_url_change: { target: false, value: false, category: 'wait' },
+  wait_for_network_idle: { target: false, value: false, category: 'wait' }
+});
+
+export const ACTION_NAMES = Object.freeze(Object.keys(ACTIONS));
+export const isSupportedAction = action => Object.hasOwn(ACTIONS, String(action || ''));

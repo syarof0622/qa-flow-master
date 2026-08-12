@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA Flow Master Pro</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+
+<body class="bento-theme">
+
+  <div class="bento-app-wrapper">
+
+    <!-- BENTO HEADER CARD -->
+    <header class="bento-card bento-header-card">
+      <div class="brand">
+        <div class="logo-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <polyline points="9 11 12 14 22 4" />
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>QA Flow Master</h1>
+          <div class="header-sub-row">
+            <span class="version-tag">PRO v4.3</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-right-actions">
+        <button id="btnAppRefresh" class="bento-theme-toggle-btn" title="Muat ulang aplikasi"
+          aria-label="Muat ulang aplikasi">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+        </button>
+        <button id="btnLanguageToggle" class="bento-theme-toggle-btn language-toggle-btn" title="Ubah bahasa"
+          aria-label="Ubah bahasa ke English">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+          </svg>
+        </button>
+        <button id="btnThemeToggle" class="bento-theme-toggle-btn" title="Ganti Mode Terang/Gelap"
+          aria-label="Ganti mode terang atau gelap">
+          <svg class="icon-dark" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- BENTO SUITE SELECTOR CARD -->
+    <div class="bento-card bento-suite-card">
+      <div class="suite-selector-wrapper">
+        <select id="suiteSelector" class="bento-select" aria-label="Pilih proyek aktif"></select>
+      </div>
+      <div class="suite-actions">
+        <label for="suiteSelector" class="bento-icon-btn" style="cursor: pointer;" title="Buka Daftar Proyek"
+          aria-label="Buka daftar proyek">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+        </label>
+        <button id="btnNewSuite" class="bento-icon-btn" title="Buat Proyek Baru" aria-label="Buat proyek baru">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+        <button id="btnDupSuite" class="bento-icon-btn" title="Duplikat Proyek" aria-label="Duplikat proyek aktif">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+        </button>
+        <button id="btnRenameSuite" class="bento-icon-btn" title="Ubah Nama Proyek" aria-label="Ubah nama proyek aktif">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+        </button>
+        <button id="btnSuiteSettings" class="bento-icon-btn" title="Pengaturan Proyek"
+          aria-label="Atur metadata proyek">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z" />
+          </svg>
+        </button>
+        <button id="btnDeleteSuite" class="bento-icon-btn danger" title="Hapus Proyek" aria-label="Hapus proyek aktif">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+
+    <!-- BENTO NAVIGATION TABS -->
+    <nav class="bento-nav-tabs" role="tablist" aria-label="Menu utama">
+      <button id="tab-btn-builder" class="bento-tab-btn active" data-tab="tab-builder" role="tab" aria-selected="true"
+        aria-controls="tab-builder" tabindex="0">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
+        </svg> Steps
+      </button>
+      <button id="tab-btn-copilot" class="bento-tab-btn" data-tab="tab-copilot" role="tab" aria-selected="false"
+        aria-controls="tab-copilot" tabindex="-1">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z" />
+        </svg> Copilot
+      </button>
+      <button id="tab-btn-presets" class="bento-tab-btn" data-tab="tab-presets" role="tab" aria-selected="false"
+        aria-controls="tab-presets" tabindex="-1">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg> Data
+      </button>
+      <button id="tab-btn-monitor" class="bento-tab-btn" data-tab="tab-monitor" role="tab" aria-selected="false"
+        aria-controls="tab-monitor" tabindex="-1">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg> Logs <span id="logBadgeCount" class="badge-count hidden">0</span>
+      </button>
+      <button id="tab-btn-reports" class="bento-tab-btn" data-tab="tab-reports" role="tab" aria-selected="false"
+        aria-controls="tab-reports" tabindex="-1">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg> Report
+      </button>
+    </nav>
+
+    <!-- BENTO MAIN CONTENTS -->
+    <main class="bento-main">
+
+      <!-- TAB 1: STEP BUILDER -->
+      <section id="tab-builder" class="tab-pane active" role="tabpanel" aria-labelledby="tab-btn-builder">
+
+        <!-- BENTO ACTION GRID -->
+        <div class="bento-grid-3">
+          <button id="btnRecord" class="bento-action-card record-card" aria-pressed="false" title="Rekam langkah tes">
+            <span class="action-icon-dot"></span>
+            <span class="action-label" id="btnRecordText">Rekam</span>
+          </button>
+
+          <button id="btnRecordScreen" class="bento-action-card screen-record-card" aria-pressed="false"
+            title="Murni rekam video layar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="23 7 16 12 23 17 23 7"></polygon>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+            <span class="action-label" id="btnRecordScreenText">Layar</span>
+          </button>
+
+          <button id="btnRunSuite" class="bento-action-card run-card" title="Jalankan · Alt: semua baris dataset">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            <span class="action-label">Jalan</span>
+          </button>
+        </div>
+
+
+
+        <!-- BENTO SETTINGS & UTILS CARD -->
+        <div class="bento-card bento-settings-card">
+          <div class="settings-row">
+            <div class="setting-pill">
+              <label class="sr-only" for="stepDelayInput">Delay antar langkah</label>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+              </svg>
+              <input type="number" id="stepDelayInput" value="500" min="100" max="5000" step="100">
+              <small>ms</small>
+            </div>
+            <div class="setting-pill">
+              <label class="sr-only" for="autoRetrySelect">Jumlah retry</label>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" aria-hidden="true">
+                <path d="M20 7v5h-5" />
+                <path d="M19 12a7 7 0 1 1-2-5" />
+              </svg>
+              <select id="autoRetrySelect" class="pill-select">
+                <option value="0">0x</option>
+                <option value="1">1x</option>
+                <option value="2" selected>2x</option>
+                <option value="3">3x</option>
+              </select>
+            </div>
+            <button type="button" id="stopOnErrorCheck" class="setting-pill toggle-icon-btn"
+              title="Berhenti saat langkah gagal" aria-label="Berhenti saat langkah gagal" aria-pressed="true">
+              <svg class="stop-on-error-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M8 3h8l5 5v8l-5 5H8l-5-5V8l5-5Z" />
+                <path d="M12 8v5m0 3h.01" />
+              </svg>
+              <span class="sr-only">Stop on error</span>
+            </button>
+            <button type="button" id="recordVideoCheck" class="setting-pill toggle-icon-btn"
+              title="Rekam video saat eksekusi" aria-label="Rekam video saat eksekusi" aria-pressed="false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+              </svg>
+              <span class="sr-only">Record video</span>
+            </button>
+          </div>
+          <div class="util-row">
+            <button id="btnA11yAudit" class="bento-util-btn warning" title="Audit aksesibilitas · Alt: keyboard-only"
+              aria-label="Audit aksesibilitas">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="4" r="2" />
+                <path d="M5 8h14M12 6v6m0 0-4 8m4-8 4 8" />
+              </svg>
+            </button>
+            <button id="btnClearStorage" class="bento-util-btn danger" title="Bersihkan local dan session storage"
+              aria-label="Bersihkan state halaman">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m7 15 7-7 4 4-7 7H7l-3-3 3-3" />
+                <path d="M14 19h6" />
+              </svg>
+            </button>
+            <button id="btnClearSteps" class="bento-util-btn ghost" title="Hapus semua langkah"
+              aria-label="Hapus semua langkah">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- EXECUTION PROGRESS BANNER -->
+        <div id="executionBanner" class="bento-banner hidden" role="status" aria-live="polite">
+          <div id="bannerIcon" class="banner-status-icon" aria-hidden="true"></div>
+          <div class="banner-copy">
+            <strong id="bannerText" class="banner-text">Menjalankan tes</strong>
+            <span id="bannerDetail" class="banner-detail">Menyiapkan suite…</span>
+          </div>
+          <div class="banner-controls">
+            <button id="btnExportBugModalOpen" class="banner-control export-bug-banner-btn hidden"
+              title="1-Click Export Bug ke Jira / Linear / Slack / Teams / GitHub" aria-label="1-Click Export Bug">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+              </svg>
+              <span>Export Bug</span>
+            </button>
+            <button id="btnPauseExecution" class="banner-control hidden" title="Pause" aria-label="Pause eksekusi"><svg
+                width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round">
+                <line x1="10" y1="4" x2="10" y2="20" />
+                <line x1="14" y1="4" x2="14" y2="20" />
+              </svg></button>
+            <button id="btnStopExecution" class="banner-control hidden" title="Stop" aria-label="Hentikan eksekusi"><svg
+                width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="4" y="4" width="16" height="16" rx="2" />
+              </svg></button>
+            <button id="btnDismissBanner" class="banner-dismiss" title="Tutup status"
+              aria-label="Tutup status eksekusi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg></button>
+          </div>
+          <div class="progress-bar-container">
+            <div id="progressBar" class="progress-bar" role="progressbar" aria-label="Progres eksekusi"
+              aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+          </div>
+        </div>
+
+        <!-- BENTO STEPS CONTAINER CARD -->
+        <div class="bento-card bento-steps-card">
+          <div class="bento-card-header">
+            <div class="card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+              <h3>Langkah Tes (<span id="stepCount">0</span>)</h3>
+            </div>
+            <button id="btnToggleAddManual" class="bento-btn-sm">+ Manual Langkah Uji</button>
+          </div>
+
+          <!-- MANUAL FORM -->
+          <form id="manualStepForm" class="bento-manual-form hidden">
+            <h4>Tambah Langkah Manual</h4>
+            <div class="form-group">
+              <label for="manualAction">Tipe Aksi:</label>
+              <select id="manualAction" class="bento-input">
+                <option value="click">Click Element</option>
+                <option value="fill">Fill Input</option>
+                <option value="select">Select Dropdown</option>
+                <option value="hover">Hover / Mouseover</option>
+                <option value="assert_visible">Assert Visible</option>
+                <option value="assert_enabled">Assert Enabled</option>
+                <option value="assert_disabled">Assert Disabled</option>
+                <option value="assert_checked">Assert Checked</option>
+                <option value="assert_unchecked">Assert Unchecked</option>
+                <option value="assert_text">Assert Text</option>
+                <option value="assert_value">Assert Value</option>
+                <option value="assert_attribute">Assert Attribute</option>
+                <option value="assert_css">Assert CSS</option>
+                <option value="assert_count">Assert Count</option>
+                <option value="assert_screenshot">Assert Screenshot</option>
+                <option value="assert_network_status">Assert Network Status</option>
+                <option value="assert_no_console_errors">Assert No Console Error</option>
+                <option value="assert_a11y">Assert Accessibility</option>
+                <option value="assert_performance">Assert Performance Budget</option>
+                <option value="assert_security_headers">Assert Security Headers</option>
+                <option value="api_request">API Request + Assert</option>
+                <option value="mock_route">Mock Network Route</option>
+                <option value="clear_mocks">Clear Network Mocks</option>
+                <option value="use_flow">Run Reusable Flow</option>
+                <option value="assert_url">Assert URL</option>
+                <option value="wait">Wait (Delay)</option>
+                <option value="wait_for_element_hidden">Wait for Element Hidden</option>
+                <option value="wait_for_text">Wait for Text Appear</option>
+                <option value="wait_for_url_change">Wait for URL Change</option>
+                <option value="wait_for_network_idle">Wait for Network Idle</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="manualSelector">Target CSS Selector:</label>
+              <input type="text" id="manualSelector" class="bento-input" placeholder="#email atau button.btn-next">
+            </div>
+            <div class="form-group">
+              <label for="manualValue">Value / Expected Text:</label>
+              <input type="text" id="manualValue" class="bento-input" placeholder="qa@test.com atau {{email}}">
+            </div>
+            <div class="form-group">
+              <label for="manualNotes">Notes (opsional):</label>
+              <input type="text" id="manualNotes" class="bento-input" placeholder="Catatan untuk step ini...">
+            </div>
+            <div class="manual-meta-grid">
+              <div class="form-group">
+                <label for="manualGroup">Group:</label>
+                <input type="text" id="manualGroup" class="bento-input" placeholder="Login">
+              </div>
+              <div class="form-group">
+                <label for="manualTimeout">Timeout:</label>
+                <input type="number" id="manualTimeout" class="bento-input" value="5000" min="250" max="60000"
+                  step="250">
+              </div>
+            </div>
+            <div class="manual-meta-grid">
+              <div class="form-group">
+                <label for="manualRequirementIds">Requirement ID:</label>
+                <input type="text" id="manualRequirementIds" class="bento-input" placeholder="REQ-1, REQ-2">
+                <div id="manualRequirementOptions" class="manual-requirement-options"></div>
+              </div>
+              <div class="form-group">
+                <label for="manualRisk">Risk:</label>
+                <select id="manualRisk" class="bento-input">
+                  <option>CRITICAL</option>
+                  <option>HIGH</option>
+                  <option selected>MEDIUM</option>
+                  <option>LOW</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="bento-btn bento-btn-primary">Simpan</button>
+              <button type="button" id="btnCancelManual" class="bento-btn bento-btn-ghost">Batal</button>
+            </div>
+          </form>
+
+          <!-- STEP LIST -->
+          <div id="stepList" class="bento-step-list">
+            <div class="bento-empty-state">
+              <div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg></div>
+              <p>Belum ada langkah tes.</p>
+              <span>Klik <strong>"Rekam"</strong> lalu lakukan aksi di website, atau tambah langkah manual.</span>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- TAB 2: DATA PRESETS -->
+      <section id="tab-presets" class="tab-pane" role="tabpanel" aria-labelledby="tab-btn-presets" hidden>
+        <div class="bento-card">
+          <div class="bento-card-header">
+            <div class="card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              <h3>QA Dummy Data Variables</h3>
+            </div>
+            <div class="data-context-actions">
+              <button id="btnAddEnvironment" class="bento-icon-btn" title="Tambah environment"
+                aria-label="Tambah environment">+</button>
+              <button id="btnSetSecrets" class="bento-icon-btn" title="Session secrets"
+                aria-label="Atur session secrets">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="8" cy="15" r="4" />
+                  <path d="m11 12 9-9m-3 3 3 3m-6 0 3 3" />
+                </svg>
+              </button>
+              <button id="btnAIGenerateData" class="bento-icon-btn" title="Generate Data dengan AI"
+                aria-label="Generate Data dengan AI">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                  <path d="M5 3v4" />
+                  <path d="M19 17v4" />
+                  <path d="M3 5h4" />
+                  <path d="M17 19h4" />
+                </svg>
+              </button>
+              <label class="bento-icon-btn dataset-import-btn" title="Import dataset"
+                aria-label="Import dataset JSON atau CSV">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 3v12m-4-4 4 4 4-4" />
+                  <path d="M4 19h16" />
+                </svg>
+                <input id="datasetInput" class="hidden" type="file" accept=".json,.csv,application/json,text/csv">
+              </label>
+            </div>
+          </div>
+          <div class="data-context-grid">
+            <select id="environmentSelector" class="bento-select" aria-label="Environment aktif"></select>
+            <select id="datasetSelector" class="bento-select" aria-label="Dataset aktif">
+              <option value="">Tanpa dataset</option>
+            </select>
+          </div>
+          <p class="card-subtitle">Klik chip untuk menyalin variabel. Pasang di value step tes.</p>
+
+          <div class="bento-preset-grid">
+            <div class="bento-chip" data-var="{{email}}"><code>{{email}}</code><span>Email Acak</span></div>
+            <div class="bento-chip" data-var="{{fullname}}"><code>{{fullname}}</code><span>Nama Lengkap</span></div>
+            <div class="bento-chip" data-var="{{phone}}"><code>{{phone}}</code><span>No. HP Indonesia</span></div>
+            <div class="bento-chip" data-var="{{nik}}"><code>{{nik}}</code><span>NIK / KTP Dummy</span></div>
+            <div class="bento-chip" data-var="{{password}}"><code>{{password}}</code><span>Password Kuat</span></div>
+            <div class="bento-chip" data-var="{{address}}"><code>{{address}}</code><span>Alamat Lengkap</span></div>
+            <div class="bento-chip" data-var="{{city}}"><code>{{city}}</code><span>Nama Kota</span></div>
+            <div class="bento-chip" data-var="{{postcode}}"><code>{{postcode}}</code><span>Kode Pos</span></div>
+            <div class="bento-chip" data-var="{{company}}"><code>{{company}}</code><span>Nama Perusahaan</span></div>
+            <div class="bento-chip" data-var="{{job_title}}"><code>{{job_title}}</code><span>Jabatan</span></div>
+            <div class="bento-chip" data-var="{{npwp}}"><code>{{npwp}}</code><span>NPWP Indonesia</span></div>
+            <div class="bento-chip" data-var="{{cc_visa}}"><code>{{cc_visa}}</code><span>Visa Credit Card</span></div>
+            <div class="bento-chip" data-var="{{cc_master}}"><code>{{cc_master}}</code><span>Mastercard</span></div>
+            <div class="bento-chip" data-var="{{cc_amex}}"><code>{{cc_amex}}</code><span>Amex Card</span></div>
+            <div class="bento-chip" data-var="{{price_idr}}"><code>{{price_idr}}</code><span>Harga IDR</span></div>
+            <div class="bento-chip" data-var="{{date_past}}"><code>{{date_past}}</code><span>Tgl Lampau</span></div>
+            <div class="bento-chip" data-var="{{date_future}}"><code>{{date_future}}</code><span>Tgl Depan</span></div>
+            <div class="bento-chip" data-var="{{url}}"><code>{{url}}</code><span>URL Website</span></div>
+            <div class="bento-chip" data-var="{{ip_v4}}"><code>{{ip_v4}}</code><span>IPv4 Address</span></div>
+            <div class="bento-chip" data-var="{{mac_address}}"><code>{{mac_address}}</code><span>MAC Address</span>
+            </div>
+            <div class="bento-chip" data-var="{{uuid}}"><code>{{uuid}}</code><span>UUID v4</span></div>
+            <div class="bento-chip" data-var="{{lorem_ipsum}}"><code>{{lorem_ipsum}}</code><span>Lorem Ipsum</span>
+            </div>
+            <div class="bento-chip" data-var="{{user_agent}}"><code>{{user_agent}}</code><span>User-Agent</span></div>
+            <div class="bento-chip" data-var="{{timestamp}}"><code>{{timestamp}}</code><span>Waktu ISO</span></div>
+            <div class="bento-chip" data-var="{{randomtext}}"><code>{{randomtext}}</code><span>Teks Acak</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: LIVE LOG MONITOR -->
+      <section id="tab-monitor" class="tab-pane" role="tabpanel" aria-labelledby="tab-btn-monitor" hidden>
+        <div class="bento-card">
+          <div class="bento-log-toolbar">
+            <div class="bento-filter-group" role="group" aria-label="Filter log">
+              <button class="filter-btn active" data-filter="ALL" aria-pressed="true">
+                <span class="filter-btn-text-full">Semua</span>
+                <span class="filter-btn-text-short">All</span>
+              </button>
+              <button class="filter-btn" data-filter="ERROR" aria-pressed="false">
+                <span class="filter-btn-text-full">Console</span>
+                <span class="filter-btn-text-short">Cons</span>
+              </button>
+              <button class="filter-btn" data-filter="NETWORK" aria-pressed="false">
+                <span class="filter-btn-text-full">Network</span>
+                <span class="filter-btn-text-short">Net</span>
+              </button>
+              <button class="filter-btn" data-filter="SLOW" aria-pressed="false" title="Request lambat"
+                aria-label="Tampilkan request lambat">⚡</button>
+            </div>
+            <div class="log-toolbar-actions">
+              <button id="btnAnnotateScreenshot" class="log-clear-btn"
+                title="🎨 Annotate & Sensor Blur Screenshot Halaman Web" aria-label="Annotate Screenshot Halaman">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 19l7-7 3 3-7 7-3-3z" />
+                  <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+                </svg>
+              </button>
+              <button id="btnExportHar" class="log-clear-btn" title="Ekspor Log Network ke File HAR (.har)"
+                aria-label="Ekspor Log Network ke File HAR">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path
+                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+              </button>
+              <button id="btnCopyLogs" class="log-clear-btn" title="Salin log yang tampil"
+                aria-label="Salin semua log yang tampil">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              </button>
+              <button id="btnClearLogs" class="log-clear-btn" title="Hapus semua log" aria-label="Hapus semua log">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14H6L5 6m3 0V4h8v2" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div id="networkFilterBar" class="network-filter-area hidden" aria-label="Filter Network">
+            <div class="network-method-filters" role="group" aria-label="Filter metode HTTP">
+              <button class="network-filter-btn active" data-network-method="ALL" aria-pressed="true">Semua</button>
+              <button class="network-filter-btn network-failed-btn" data-network-method="FAILED"
+                aria-pressed="false">Gagal</button>
+              <button class="network-filter-btn" data-network-method="GET" aria-pressed="false">GET</button>
+              <button class="network-filter-btn" data-network-method="POST" aria-pressed="false">POST</button>
+              <button class="network-filter-btn" data-network-method="WRITE" aria-pressed="false">PUT/PATCH</button>
+              <button class="network-filter-btn" data-network-method="DELETE" aria-pressed="false">DELETE</button>
+              <button id="btnToggleNetworkAdvanced" class="network-filter-btn network-more-btn" title="Filter lanjutan"
+                aria-label="Buka filter Network lanjutan" aria-expanded="false">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round">
+                  <path d="M4 6h16M7 12h10M10 18h4" />
+                </svg>
+              </button>
+            </div>
+            <div id="networkAdvancedFilters" class="network-advanced-filters hidden">
+              <label><span>Status</span><select id="networkStatusFilter">
+                  <option value="ALL">Semua</option>
+                  <option value="2">2xx</option>
+                  <option value="3">3xx</option>
+                  <option value="4">4xx</option>
+                  <option value="5">5xx</option>
+                </select></label>
+              <label><span>Tipe</span><select id="networkTypeFilter">
+                  <option value="ALL">Semua</option>
+                  <option value="API">Fetch/XHR</option>
+                  <option value="DOCUMENT">Document</option>
+                  <option value="SCRIPT">JS</option>
+                  <option value="STYLE">CSS</option>
+                  <option value="IMAGE">Image</option>
+                  <option value="SOCKET">WebSocket/SSE</option>
+                </select></label>
+              <label><span>Domain</span><select id="networkDomainFilter">
+                  <option value="ALL">Semua</option>
+                  <option value="INTERNAL">Internal</option>
+                  <option value="THIRD_PARTY">Pihak ketiga</option>
+                </select></label>
+              <label class="network-slow-toggle"><input id="networkSlowFilter"
+                  type="checkbox"><span>&gt;1s</span></label>
+              <label class="network-slow-toggle" title="Simpan body request/response (data sensitif)"><input
+                  id="networkBodyCaptureCheck" type="checkbox"><span>Body</span></label>
+            </div>
+          </div>
+          <div id="monitorStatus" class="monitor-status" role="status">
+            <span class="monitor-dot"></span><span id="monitorStatusText">Memeriksa monitor</span>
+            <button id="btnTestMonitor" class="monitor-test-btn" title="Tes console monitor"
+              aria-label="Tes console monitor">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m8 5 8 7-8 7z" />
+              </svg>
+            </button>
+          </div>
+          <label class="log-search-wrap">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-4-4" />
+            </svg>
+            <input id="logSearchInput" class="log-search" type="search" placeholder="Cari log" aria-label="Cari log">
+          </label>
+          <div id="logList" class="bento-log-list">
+            <div class="bento-empty-state">
+              <div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <polyline points="9 11 12 14 22 4" />
+                </svg></div>
+              <p>Belum ada error terdeteksi.</p>
+              <span>Console.error, exceptions, HTTP 4xx/5xx, dan response body akan muncul di sini.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: REPORT & EXPORT -->
+      <section id="tab-reports" class="tab-pane" role="tabpanel" aria-labelledby="tab-btn-reports" hidden>
+
+        <!-- BENTO SUMMARY METRICS GRID -->
+        <div class="bento-metrics-grid">
+          <div class="bento-metric-card">
+            <span class="metric-label">Total</span>
+            <span id="sumTotalSteps" class="metric-value">0</span>
+          </div>
+          <div class="bento-metric-card success">
+            <span class="metric-label">Passed</span>
+            <span id="sumPassedSteps" class="metric-value text-success">0</span>
+          </div>
+          <div class="bento-metric-card danger">
+            <span class="metric-label">Failed</span>
+            <span id="sumFailedSteps" class="metric-value text-danger">0</span>
+          </div>
+          <div class="bento-metric-card status">
+            <span class="metric-label">Status</span>
+            <span id="sumStatus" class="metric-value text-muted">-</span>
+          </div>
+        </div>
+        <div id="qualityInsights" class="quality-insights hidden" aria-live="polite"></div>
+
+        <div class="bento-card qa-readiness-card">
+          <div class="bento-card-header">
+            <div class="card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+              <h3>QA Readiness</h3>
+            </div>
+            <div class="qa-governance-menu-wrap">
+              <button id="btnQaGovernanceMenu" class="bento-icon-btn qa-menu-trigger" title="Menu QA Readiness"
+                aria-label="Buka menu QA Readiness" aria-haspopup="menu" aria-expanded="false">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <circle cx="5" cy="12" r="1.8" />
+                  <circle cx="12" cy="12" r="1.8" />
+                  <circle cx="19" cy="12" r="1.8" />
+                </svg>
+              </button>
+              <div id="qaGovernanceMenu" class="qa-governance-menu hidden" role="menu" aria-label="Aksi QA Readiness">
+                <button id="btnRequirements" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 6h11M8 12h11M8 18h11" />
+                    <path d="m3 6 1 1 2-2m-3 7 1 1 2-2m-3 7 1 1 2-2" />
+                  </svg><span>Requirements</span></button>
+                <button id="btnAddDefect" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v6m0 4h.01" />
+                  </svg><span>Tambah defect</span></button>
+                <button id="btnDefectBoard" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="4" y="4" width="16" height="16" rx="2" />
+                    <path d="M9 4v16m6-16v16M4 10h16" />
+                  </svg><span>Defect board</span></button>
+                <button id="btnAddExploration" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m12 3 8 8-8 10-8-10 8-8Z" />
+                    <circle cx="12" cy="11" r="2" />
+                  </svg><span>Exploratory session</span></button>
+                <button id="btnReleaseSignoff" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m5 12 4 4L19 6" />
+                  </svg><span>Cetak Sign-off</span></button>
+                <button id="btnVideoSettings" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" aria-hidden="true">
+                    <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                  </svg><span>Video Settings</span></button>
+                <button id="btnAiSettings" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" aria-hidden="true">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  </svg><span>AI Settings</span></button>
+                <button id="btnSuiteVersions" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                    <path d="M3 3v5h5m4-1v5l3 2" />
+                  </svg><span>Riwayat versi</span></button>
+                <button id="btnExportBugMenu" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" aria-hidden="true">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                    <line x1="4" y1="22" x2="4" y2="15" />
+                  </svg><span>1-Click Export Bug</span></button>
+                <button id="btnRewind30sMenu" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" aria-hidden="true">
+                    <path d="M11 19l-9-7 9-7v14z" />
+                    <path d="M22 19l-9-7 9-7v14z" />
+                  </svg><span>Rewind 30s Video Bug</span></button>
+                <button id="btnCheckIpInfo" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="2" y1="12" x2="22" y2="12" />
+                    <path
+                      d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                  </svg><span>Cek IP & Geolokasi</span></button>
+                <button id="btnWorkspaceBackup" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3v12m-5-5 5 5 5-5" />
+                    <path d="M5 20h14" />
+                  </svg><span>Backup workspace</span></button>
+              </div>
+            </div>
+          </div>
+          <div id="qaReadiness" class="qa-readiness-grid" aria-live="polite"></div>
+        </div>
+
+        <!-- BENTO EXECUTION HISTORY CARD -->
+        <div class="bento-card">
+          <div class="bento-card-header">
+            <div class="card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <h3>Riwayat Eksekusi (Maks 20 Run)</h3>
+            </div>
+            <button id="btnClearHistory" class="bento-icon-btn danger" title="Hapus Semua Riwayat"
+              aria-label="Hapus semua riwayat eksekusi">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            </button>
+          </div>
+          <div id="executionHistoryList" class="bento-history-list">
+            <p class="text-muted" style="font-size:11px;text-align:center;padding:12px;">Belum ada riwayat.</p>
+          </div>
+        </div>
+
+        <!-- BENTO VIDEO HISTORY CARD -->
+        <div class="bento-card">
+          <div class="bento-card-header">
+            <div class="card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+              </svg>
+              <h3>Riwayat Rekaman Video</h3>
+            </div>
+            <button id="btnClearVideoHistory" class="bento-icon-btn danger" title="Hapus Semua Riwayat Video"
+              aria-label="Hapus semua riwayat video">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            </button>
+          </div>
+          <div id="videoHistoryList" class="bento-history-list">
+            <p class="text-muted" style="font-size:11px;text-align:center;padding:12px;">Belum ada riwayat video.</p>
+          </div>
+        </div>
+
+        <!-- BENTO EXPORT ACTIONS CARD -->
+        <div class="bento-card">
+          <div class="bento-card-header">
+            <div class="card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <h3>Export & Report Suite</h3>
+            </div>
+          </div>
+          <div class="bento-export-stack">
+            <button id="btnDownloadReportHTML" class="bento-btn bento-btn-primary bento-full-width">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg> Download HTML Report (+ Screenshot)
+            </button>
+            <div class="bento-grid-2">
+              <button id="btnExportPlaywright" class="bento-btn bento-btn-outline playwright">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;">
+                  <polyline points="16 18 22 12 16 6" />
+                  <polyline points="8 6 2 12 8 18" />
+                </svg> Playwright TS
+              </button>
+              <button id="btnExportCypress" class="bento-btn bento-btn-outline cypress"
+                title="Export kompatibilitas dasar">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg> Cypress Basic
+              </button>
+            </div>
+            <div class="bento-grid-2">
+              <button id="btnExportJSON" class="bento-btn bento-btn-ghost">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg> Export JSON
+              </button>
+              <label class="bento-btn bento-btn-ghost file-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg> Import JSON
+                <input type="file" id="importJSONInput" accept=".json,application/json" class="hidden"
+                  aria-label="Import suite dari file JSON">
+              </label>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- TAB 5: QA COPILOT -->
+      <section id="tab-copilot" class="tab-pane" role="tabpanel" aria-labelledby="tab-btn-copilot" hidden>
+        <div class="bento-card bento-copilot-card">
+          <div class="bento-card-header copilot-card-header">
+            <div class="card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              <h3>QA Copilot</h3>
+              <span id="copilotProviderBadge" class="copilot-header-badge" title="Klik untuk Pengaturan AI">AI
+                Ready</span>
+            </div>
+            <div class="copilot-header-top-actions">
+              <button id="btnOpenAiSettingsDirect" class="bento-icon-btn" title="Pengaturan AI (API Key)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="copilot-thread-bar">
+            <div class="copilot-thread-dropdown" id="copilotThreadDropdown">
+              <button type="button" id="copilotThreadTrigger"
+                class="bento-select copilot-thread-select copilot-thread-trigger" title="Riwayat Chat"
+                aria-label="Riwayat Percakapan Chat" aria-haspopup="listbox" aria-expanded="false">
+                <span class="ctd-current" id="copilotThreadCurrent"></span>
+              </button>
+              <div class="ctd-menu hidden" id="copilotThreadMenu" role="listbox"></div>
+            </div>
+            <button id="btnNewCopilotThread" class="bento-icon-btn" title="Chat Baru (+ New Chat)"
+              aria-label="Buat Percakapan Chat Baru">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+            <button id="btnClearCopilot" class="bento-icon-btn danger" title="Hapus Percakapan Aktif">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
+          <div id="copilotChatArea" class="copilot-chat-area">
+            <div class="copilot-prompt-suggestions">
+              <button class="copilot-chip" data-prompt="Buatkan skenario test login dengan username dan password"><svg
+                  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  style="margin-right:2px">
+                  <path
+                    d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
+                  </path>
+                </svg> Test Login</button>
+              <button class="copilot-chip" data-prompt="Buatkan test form pendaftaran lengkap"><svg width="12"
+                  height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  style="margin-right:2px">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg> Form Register</button>
+              <button class="copilot-chip"
+                data-prompt="Buatkan assertion verifikasi judul halaman dan tombol utama"><svg width="12" height="12"
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg> Cek Element</button>
+            </div>
+            <div class="copilot-msg system">
+              <div class="msg-bubble">Halo! Saya QA Copilot. Ceritakan skenario tes apa yang ingin Anda buat di halaman
+                ini?</div>
+            </div>
+          </div>
+          <div id="copilotAttachmentContainer" class="copilot-attachment-container hidden"></div>
+          <div class="copilot-input-area">
+            <input type="file" id="copilotFileInput" accept=".txt,.json,.csv,.md,.doc,.docx,.pdf,image/*" multiple
+              hidden>
+            <button id="btnAttachCopilotFile" class="copilot-attach-btn"
+              title="Lampirkan File / Gambar Test Case (TXT, PDF, JSON, CSV, PNG, JPG)"
+              aria-label="Lampirkan File atau Gambar Test Case">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+              </svg>
+            </button>
+            <textarea id="copilotInput"
+              placeholder="Ketik skenario, paste teks/gambar, atau lampirkan file test case..." rows="2"></textarea>
+            <button id="btnSendCopilot" class="bento-btn bento-btn-primary" aria-label="Kirim ke AI">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BENTO FOOTER -->
+    <footer class="bento-footer">
+      <span>QA Flow Master Pro &bull; Built by Love</span>
+    </footer>
+
+  </div>
+
+  <!-- BENTO CUSTOM MODAL POPUP SYSTEM -->
+  <div id="bentoModalOverlay" class="bento-modal-overlay hidden">
+    <div class="bento-modal-card" role="dialog" aria-modal="true" aria-labelledby="bentoModalTitle"
+      aria-describedby="bentoModalMessage">
+      <div class="bento-modal-header">
+        <div class="bento-modal-title-group">
+          <span id="bentoModalIcon" class="bento-modal-icon" aria-hidden="true"></span>
+          <h3 id="bentoModalTitle">Konfirmasi</h3>
+        </div>
+        <div class="bento-modal-header-actions">
+          <button id="bentoModalExampleBtn" class="bento-modal-example hidden" title="Isi contoh"
+            aria-label="Isi contoh JSON">{ }</button>
+          <button id="bentoModalCloseBtn" class="bento-modal-close" aria-label="Tutup dialog">&times;</button>
+        </div>
+      </div>
+      <div class="bento-modal-body">
+        <p id="bentoModalMessage">Pesan konfirmasi...</p>
+        <div id="bentoModalInputGroup" class="bento-modal-input-group hidden">
+          <input type="text" id="bentoModalInput" class="bento-input" placeholder="Masukkan teks...">
+          <div id="bentoModalInputError" class="bento-modal-input-error hidden" role="alert"></div>
+        </div>
+      </div>
+      <div class="bento-modal-footer">
+        <button id="bentoModalCancelBtn" class="bento-btn bento-btn-ghost">Batal</button>
+        <button id="bentoModalConfirmBtn" class="bento-btn bento-btn-primary">Ya, Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="bentoLiveRegion" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <div id="qaWorkspaceOverlay" class="qa-workspace-overlay hidden">
+    <section class="qa-workspace" role="dialog" aria-modal="true" aria-labelledby="qaWorkspaceTitle">
+      <header class="qa-workspace-header">
+        <div><span id="qaWorkspaceEyebrow">QA Workspace</span>
+          <h3 id="qaWorkspaceTitle">Manager</h3>
+        </div>
+        <button id="qaWorkspaceClose" class="bento-modal-close" aria-label="Tutup">&times;</button>
+      </header>
+      <div id="qaWorkspaceBody" class="qa-workspace-body"></div>
+    </section>
+  </div>
+
+  <!-- VIDEO PREVIEW MODAL -->
+  <div id="qaVideoPreviewModal" class="qa-workspace-overlay hidden">
+    <section class="qa-workspace video-workspace" role="dialog" aria-modal="true" aria-labelledby="qaVideoTitle">
+      <header class="qa-workspace-header">
+        <div>
+          <span id="qaVideoEyebrow">QA Result</span>
+          <h3 id="qaVideoTitle">Video Recording</h3>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button id="qaVideoOpenTabBtn" class="bento-icon-btn" title="Buka Video di Tab Baru (Layar Penuh)"
+            aria-label="Buka di Tab Baru">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </button>
+          <button id="qaVideoFullscreenToggle" class="bento-icon-btn" title="Layar Penuh (Fullscreen)"
+            aria-label="Toggle Fullscreen">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+              </path>
+            </svg>
+          </button>
+          <button id="qaVideoClose" class="bento-modal-close" aria-label="Tutup">&times;</button>
+        </div>
+      </header>
+      <div id="qaVideoBody" class="qa-workspace-body video-preview-body">
+        <video id="qaVideoPlayer" controls autoplay class="qa-video-player hidden"></video>
+
+        <div id="qaVideoUploadState" class="qa-video-state">
+          <div class="video-spinner"></div>
+          <p id="qaVideoUploadProgressText">Mengunggah ke cPanel... <b id="qaVideoUploadPercent">0%</b></p>
+          <div
+            style="width: 85%; height: 5px; background: rgba(255,255,255,0.12); border-radius: 999px; overflow: hidden; margin-top: 4px;">
+            <div id="qaVideoProgressBar"
+              style="width: 0%; height: 100%; background: #38bdf8; transition: width 0.15s ease; border-radius: 999px;">
+            </div>
+          </div>
+        </div>
+
+        <div id="qaVideoSuccessState" class="qa-video-state hidden">
+          <div class="success-icon-wrapper">
+            <svg class="premium-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          </div>
+          <p class="premium-success-text">Berhasil diunggah!</p>
+          <div class="qa-share-box premium-share-box">
+            <div class="input-wrapper">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              <input type="url" id="qaVideoLinkInput" readonly>
+            </div>
+            <button id="qaVideoCopyBtn" class="bento-btn premium-copy-btn">Salin</button>
+          </div>
+        </div>
+
+        <div id="qaVideoErrorState" class="qa-video-state hidden">
+          <div class="error-icon">⚠️</div>
+          <p id="qaVideoErrorMsg">Gagal mengunggah video.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- BENTO VISUAL ANNOTATOR + BLUR MASK MODAL -->
+  <div id="bentoAnnotatorModal" class="bento-modal-overlay hidden" role="dialog" aria-modal="true"
+    aria-labelledby="annotatorTitle">
+    <div class="bento-modal-container annotator-modal-container">
+      <div class="bento-modal-header">
+        <div class="bento-modal-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19l7-7 3 3-7 7-3-3z" />
+            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+          </svg>
+          <span id="annotatorTitle">Visual Screenshot Annotator & PII Blur Mask</span>
+        </div>
+        <div class="bento-modal-header-actions" style="display: flex; align-items: center; gap: 6px;">
+          <button class="bento-modal-close-btn" id="btnAnnotatorFullscreenToggle" title="Layar Penuh (Fullscreen)"
+            aria-label="Toggle Fullscreen">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+            </svg>
+          </button>
+          <button class="bento-modal-close-btn" id="btnCloseAnnotatorModal" title="Tutup Editor"
+            aria-label="Tutup Editor">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="annotator-toolbar">
+        <div class="annotator-tools-group">
+          <button id="toolAnnotateArrow" class="annotator-tool-btn active" title="Panah Penanda (Arrow)"><svg width="13"
+              height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="19" x2="19" y2="5" />
+              <polyline points="12 5 19 5 19 12" />
+            </svg></button>
+          <button id="toolAnnotateRect" class="annotator-tool-btn" title="Kotak Penanda (Rectangle)"><svg width="13"
+              height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+            </svg></button>
+          <button id="toolAnnotateText" class="annotator-tool-btn" title="Tulis Teks (Text)"><svg width="13" height="13"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 7V4h16v3M9 20h6M12 4v16" />
+            </svg></button>
+          <button id="toolAnnotateBlur" class="annotator-tool-btn blur-tool" title="Blur / Sensor Teks Sensitif PII">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+              <line x1="1" y1="1" x2="23" y2="23" />
+            </svg>
+            <span>Blur Mask</span>
+          </button>
+        </div>
+
+        <div class="annotator-color-group">
+          <input type="color" id="annotatorColor" value="#f43f5e" title="Warna Garis / Teks">
+          <button id="btnAnnotatorUndo" class="annotator-tool-btn" title="Urungkan (Undo)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 14L4 9l5-5" />
+              <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
+            </svg>
+          </button>
+          <button id="btnAnnotatorClear" class="annotator-tool-btn danger" title="Bersihkan Semua">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14H6L5 6m3 0V4h8v2" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="annotator-zoom-group" style="display: flex; align-items: center; gap: 4px;">
+          <button id="btnAnnotatorZoomOut" class="annotator-tool-btn" title="Perkecil (Zoom Out)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
+          </button>
+          <span id="annotatorZoomText"
+            style="font-size: 11px; font-weight: 700; color: var(--text-muted); min-width: 36px; text-align: center;">100%</span>
+          <button id="btnAnnotatorZoomIn" class="annotator-tool-btn" title="Perbesar (Zoom In)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <line x1="11" y1="8" x2="11" y2="14" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
+          </button>
+          <button id="btnAnnotatorZoomReset" class="annotator-tool-btn" title="Reset Zoom (100%)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="annotator-canvas-wrapper">
+        <canvas id="annotatorCanvas"></canvas>
+      </div>
+
+      <div class="bento-modal-footer">
+        <button id="btnAnnotatorDownload" class="bento-btn bento-btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Unduh PNG</span>
+        </button>
+        <button id="btnAnnotatorAttachCopilot" class="bento-btn bento-btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+          </svg>
+          <span>Attach ke Copilot</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BENTO BUG EXPORTER MODAL -->
+  <div id="bentoExportBugModal" class="bento-modal-overlay hidden" role="dialog" aria-modal="true"
+    aria-labelledby="exportBugTitle">
+    <div class="bento-modal-container export-modal-container">
+      <div class="bento-modal-header">
+        <div class="bento-modal-title">
+          <span class="bento-modal-icon" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+              <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+          </span>
+          <span id="exportBugTitle">Bug Exporter</span>
+        </div>
+        <button class="bento-modal-close-btn" id="btnCloseExportBugModal" title="Tutup Exporter"
+          aria-label="Tutup Exporter">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="bento-modal-body export-modal-body">
+        <p>Kirim laporan bug ke platform tujuan Anda — endpoint tersimpan aman di perangkat.</p>
+        <span class="export-field-label">Platform Tujuan</span>
+        <div class="export-platforms" role="radiogroup" aria-label="Platform Tujuan Bug Report">
+          <button type="button" class="export-platform is-active" data-platform="slack" role="radio" aria-checked="true"
+            title="Slack Incoming Webhook" style="--brand:#E01E5A">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 6H2a2 2 0 1 1 0-4h6a2 2 0 1 1 0 4zm0 4a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm6 2H8a2 2 0 1 0 0 4h6a2 2 0 1 0 0-4zm0-6h6a2 2 0 1 0 0-4h-6a2 2 0 1 0 0 4zm0-6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM6 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm12 8a2 2 0 1 1 4 0 2 2 0 0 1-4 0zM2 12a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm18-4a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>
+            <span>Slack</span>
+          </button>
+          <button type="button" class="export-platform" data-platform="teams" role="radio" aria-checked="false"
+            title="Microsoft Teams Incoming Webhook" style="--brand:#6264A7">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.383 8.564H4.569a.686.686 0 0 0-.686.686v3.133a.686.686 0 0 0 .686.686h1.443a.686.686 0 0 0 .686-.686v-.458h.857v3.112a.744.744 0 0 0 .744.744h1.084a.744.744 0 0 0 .744-.744V9.25a.686.686 0 0 0-.686-.686zm3.633.005v3.408a.81.81 0 0 0 .81.81h.837a.81.81 0 0 0 .81-.81V9.25a.686.686 0 0 0-.686-.686h-1.084a.686.686 0 0 0-.687.005zm3.998-.217v6.837a.993.993 0 0 1-.993.993h-.075a.993.993 0 0 1-.993-.993v-1.154h-1.126a.938.938 0 0 0-.938.938v1.71a.938.938 0 0 0 .938.938h3.174a.993.993 0 0 0 .993-.993V8.563a.686.686 0 0 0-.686-.686h-1.29a.686.686 0 0 0-.004-.011zm3.802 1.558h-.015v3.48a.954.954 0 0 0 .954.954h.088a.954.954 0 0 0 .954-.954v-2.394a.954.954 0 0 0-.954-.954h-.089a.954.954 0 0 0-.938-.132zM14.524 6.79a1.66 1.66 0 1 0 0-3.32 1.66 1.66 0 0 0 0 3.32zm-5.604 0a1.507 1.507 0 1 0 0-3.014 1.507 1.507 0 0 0 0 3.014zm9.114.618a1.507 1.507 0 1 0 0-3.014 1.507 1.507 0 0 0 0 3.014z"/></svg>
+            <span>Teams</span>
+          </button>
+          <button type="button" class="export-platform" data-platform="github" role="radio" aria-checked="false"
+            title="GitHub Issues (REST API)" style="--brand:currentColor">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+            <span>GitHub</span>
+          </button>
+          <button type="button" class="export-platform" data-platform="linear" role="radio" aria-checked="false"
+            title="Linear Issue Tracker (GraphQL API)" style="--brand:#5E6AD2">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5 20.5 3.5l1.4 1.4L4.9 21.9z"/><path d="M11 20.5 20.5 9.5l1.4 1.4-9.4 9.6z"/><path d="M18 20.5 21.9 15l1.5 1.2-3.9 4.3z"/><path d="M2.5 7l1.2-1.5L7.5 2.5 6.2 1.1z"/></svg>
+            <span>Linear</span>
+          </button>
+          <button type="button" class="export-platform" data-platform="jira" role="radio" aria-checked="false"
+            title="Jira Software (REST API v3)" style="--brand:#0052CC">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c2.2 4.6 5.2 6 9 6v2c-3.8 0-6.8 1.4-9 6-2.2-4.6-5.2-6-9-6V8c3.8 0 6.8-1.4 9-6z"/></svg>
+            <span>Jira</span>
+          </button>
+        </div>
+
+        <div class="export-field" id="exportEndpointField">
+          <label id="exportEndpointLabel" for="exportEndpointInput">Slack Incoming Webhook URL</label>
+          <input type="text" id="exportEndpointInput" class="export-input"
+            placeholder="https://hooks.slack.com/services/..." autocomplete="off">
+          <small class="export-hint" id="exportEndpointHint">Disimpan secara aman di lokal perangkat Anda.</small>
+        </div>
+
+        <!-- JIRA CONFIG PANEL (JAM-style) -->
+        <div class="export-jira-panel hidden" id="exportJiraPanel">
+          <div class="export-jira-statusbar">
+            <span class="export-jira-dot" id="jiraStatusDot"></span>
+            <span class="export-jira-status" id="jiraStatusText">Belum terhubung</span>
+          </div>
+
+          <div class="export-jira-fields">
+            <div class="export-field">
+              <label for="jiraSiteUrl">Site URL Jira</label>
+              <input type="text" id="jiraSiteUrl" class="export-input"
+                placeholder="https://nama-perusahaan.atlassian.net" autocomplete="off">
+            </div>
+            <div class="export-jira-row">
+              <div class="export-field">
+                <label for="jiraEmail">Email Akun</label>
+                <input type="text" id="jiraEmail" class="export-input" placeholder="nama@perusahaan.com"
+                  autocomplete="off">
+              </div>
+              <div class="export-field">
+                <label for="jiraApiToken">API Token</label>
+                <div class="export-token-wrap">
+                  <input type="password" id="jiraApiToken" class="export-input" placeholder="Atlassian API token"
+                    autocomplete="off">
+                  <button type="button" class="export-token-eye" id="btnToggleJiraToken" title="Tampilkan / Sembunyikan token"
+                    aria-label="Tampilkan atau sembunyikan token">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="bento-btn bento-btn-outline export-test-btn" id="btnTestJira">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+            <span>Test Connection</span>
+          </button>
+
+          <div class="export-jira-options hidden" id="jiraOptions">
+            <div class="export-field">
+              <label for="jiraProject">Project</label>
+              <select id="jiraProject" class="export-input" disabled>
+                <option value="">— Pilih project —</option>
+              </select>
+            </div>
+            <div class="export-jira-row">
+              <div class="export-field">
+                <label for="jiraIssueType">Issue Type</label>
+                <select id="jiraIssueType" class="export-input">
+                  <option value="Bug">Bug</option>
+                  <option value="Task">Task</option>
+                  <option value="Story">Story</option>
+                  <option value="Epic">Epic</option>
+                </select>
+              </div>
+              <div class="export-field">
+                <label for="jiraPriority">Priority</label>
+                <select id="jiraPriority" class="export-input">
+                  <option value="">— Default —</option>
+                  <option value="Highest">Highest</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                  <option value="Lowest">Lowest</option>
+                </select>
+              </div>
+            </div>
+            <div class="export-field">
+              <label for="jiraLabels">Labels</label>
+              <input type="text" id="jiraLabels" class="export-input" placeholder="bug, qa-flow, ui (pisahkan koma)"
+                autocomplete="off">
+            </div>
+            <small class="export-hint">Konfigurasi Jira tersimpan aman di perangkat. Buat API token di
+              id.atlassian.com &rarr; Security &rarr; API tokens.</small>
+          </div>
+        </div>
+
+        <div class="export-field">
+          <label for="exportBugTitleInput">Judul Laporan Bug</label>
+          <input type="text" id="exportBugTitleInput" class="export-input"
+            placeholder="[BUG] Gagal memproses form pada halaman checkout...">
+        </div>
+
+        <div class="export-field">
+          <label for="exportBugDescInput">Deskripsi & Metadata Otomatis (DOM, Console, Network)</label>
+          <textarea id="exportBugDescInput" class="export-textarea" rows="4" placeholder="Deskripsi bug..."></textarea>
+        </div>
+      </div>
+
+      <div class="bento-modal-footer">
+        <button id="btnCancelExportBug" class="bento-btn bento-btn-secondary">Batal</button>
+        <button id="btnSendBugReport" class="bento-btn bento-btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          </svg>
+          <span>Kirim Laporan Bug</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BENTO IP INFO MODAL -->
+  <div id="bentoIpModal" class="bento-modal-overlay hidden" role="dialog" aria-modal="true"
+    aria-labelledby="ipModalTitle">
+    <div class="bento-modal-container ip-modal-container">
+      <div class="bento-modal-header">
+        <div class="bento-modal-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+          <span id="ipModalTitle">Informasi IP & Geolokasi Jaringan</span>
+        </div>
+        <button class="bento-modal-close-btn" id="btnCloseIpModal" title="Tutup Modal" aria-label="Tutup Modal">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="bento-modal-body ip-modal-body">
+        <div class="bento-card bento-vpn-card modal-vpn-card">
+          <div class="vpn-card-top">
+            <div class="vpn-status-badge" id="vpnBadge">
+              <span class="vpn-dot"></span> <span id="vpnBadgeText">Scanning...</span>
+            </div>
+            <button id="btnRefreshVPN" class="bento-icon-btn vpn-refresh-btn" title="Refresh IP Info" aria-label="Refresh IP Info">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="vpn-ip-block">
+            <span class="vpn-ip-text" id="vpnIp">Memuat IP...</span>
+            <span class="vpn-loc-text" id="vpnLocation">Memuat geolokasi...</span>
+          </div>
+
+          <div class="vpn-info-grid">
+            <div class="vpn-info-item">
+              <span class="vpn-info-label">Negara</span>
+              <span class="vpn-info-value" id="vpnCountry">—</span>
+            </div>
+            <div class="vpn-info-item">
+              <span class="vpn-info-label">Kota</span>
+              <span class="vpn-info-value" id="vpnCity">—</span>
+            </div>
+            <div class="vpn-info-item">
+              <span class="vpn-info-label">ISP / Provider</span>
+              <span class="vpn-info-value" id="vpnIsp">—</span>
+            </div>
+            <div class="vpn-info-item">
+              <span class="vpn-info-label">Koneksi</span>
+              <span class="vpn-info-value" id="vpnType">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bento-modal-footer">
+        <button id="btnCopyIpAddress" class="bento-btn bento-btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+          <span>Salin IP Address</span>
+        </button>
+        <button id="btnCloseIpModalFooter" class="bento-btn bento-btn-primary">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data-generator.js"></script>
+  <script src="report-template.js"></script>
+  <script src="shared/contracts.js"></script>
+  <script src="i18n.js"></script>
+  <!-- Core controller (block 1): defines window.QAFlow bridge + shared helpers.
+       MUST load first so later modules can re-bind QAFlow helpers. -->
+  <script src="sidepanel.js"></script>
+  <!-- Feature modules: isolated DOMContentLoaded scopes communicating via window.QAFlow -->
+  <script src="sidepanel/qa-copilot.js"></script>
+  <script src="sidepanel/ai-data-generator.js"></script>
+  <script src="sidepanel/jam-killer.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,30 @@
+/* ==========================================================================
+   QA FLOW MASTER PRO — BENTO GRID DESIGN SYSTEM v3.0 (INDEX)
+   Modular stylesheet. Each system lives in its own partial under /css and is
+   composed here with @import (preserving source order = cascade order).
+   Fixing one system only touches its partial.
+
+   Order is meaningful (tokens → layout → features → panels → responsive):
+   @import 'css/00-tokens.css';   design tokens, light-theme override, reset
+   @import 'css/01-layout.css';   app wrapper, cards, header, suite selector
+   @import 'css/02-vpn-ip.css';   VPN card + IP geolocation modal
+   @import 'css/03-tabs.css';     navigation tabs, tab panes, action cards
+   @import 'css/04-data.css';     data presets / chips grid
+   @import 'css/05-logs.css';     log monitor & network filters
+   @import 'css/06-reports.css';  metrics, history, QA workspace, video preview
+   @import 'css/07-modals.css';   custom modal popup system
+   @import 'css/08-copilot.css';  QA Copilot chat design system
+   @import 'css/09-jam-killer.css'; JAM-KILLER cards, annotator, bug exporter
+   @import 'css/10-jira.css';     Jira config panel (JAM-style) + media queries
+   ========================================================================== */
+@import 'css/00-tokens.css';
+@import 'css/01-layout.css';
+@import 'css/02-vpn-ip.css';
+@import 'css/03-tabs.css';
+@import 'css/04-data.css';
+@import 'css/05-logs.css';
+@import 'css/06-reports.css';
+@import 'css/07-modals.css';
+@import 'css/08-copilot.css';
+@import 'css/09-jam-killer.css';
+@import 'css/10-jira.css';

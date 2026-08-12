@@ -1,0 +1,15 @@
+[
+  {
+    "timestamp": "2026-08-10T18:53:26.681Z",
+    "status": "passed",
+    "durationMs": 1093.961
+  },
+  {
+    "timestamp": "2026-08-11T04:04:54.651Z",
+    "status": "passed",
+    "durationMs": 1277.045,
+    "tests": 1,
+    "flakyTests": [],
+    "flakeRate": 0
+  }
+]

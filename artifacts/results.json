@@ -1,0 +1,160 @@
+{
+  "config": {
+    "argv": [
+      "/usr/local/bin/node",
+      "/Users/macbook/.gemini/antigravity/scratch/qa-flow-master/node_modules/@playwright/test/cli.js",
+      "test",
+      "--config=playwright.config.mjs"
+    ],
+    "configFile": "/Users/macbook/.gemini/antigravity/scratch/qa-flow-master/playwright.config.mjs",
+    "rootDir": "/Users/macbook/.gemini/antigravity/scratch/qa-flow-master/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/macbook/.gemini/antigravity/scratch/qa-flow-master/artifacts/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/macbook/.gemini/antigravity/scratch/qa-flow-master/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "qa-flow.spec.mjs"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "artifacts/html-report",
+          "open": "never"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "artifacts/junit.xml"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "artifacts/results.json"
+        }
+      ],
+      [
+        "/Users/macbook/.gemini/antigravity/scratch/qa-flow-master/runner/reporters/quality-reporter.mjs",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "qa-flow.spec.mjs",
+      "file": "qa-flow.spec.mjs",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "QA Flow Smoke",
+          "file": "qa-flow.spec.mjs",
+          "line": 16,
+          "column": 6,
+          "specs": [
+            {
+              "title": "QA Flow Smoke",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 467,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Open https://example.com",
+                          "duration": 166
+                        },
+                        {
+                          "title": "Test 1: Example heading is visible",
+                          "duration": 28
+                        },
+                        {
+                          "title": "Test 2: Heading content is correct",
+                          "duration": 7
+                        }
+                      ],
+                      "startTime": "2026-08-11T04:04:53.872Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "81bccb6576da86fa94d0-c5e5b6aa04b81096a8e3",
+              "file": "qa-flow.spec.mjs",
+              "line": 19,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-08-11T04:04:53.361Z",
+    "duration": 1277.045,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

@@ -1,0 +1,153 @@
+/* ==========================================================================
+   JIRA CONFIG PANEL (JAM-style)
+   ========================================================================== */
+.export-jira-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.export-jira-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  margin-bottom: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.export-jira-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.export-jira-dot.is-connected {
+  background: var(--accent-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-success) 15%, transparent);
+}
+
+.export-jira-status {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.export-jira-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.export-jira-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.export-jira-panel .export-field {
+  margin-bottom: 8px;
+}
+
+.export-token-wrap {
+  position: relative;
+}
+
+.export-token-wrap .export-input {
+  padding-right: 38px;
+}
+
+.export-token-eye {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.export-token-eye:hover {
+  color: var(--accent-primary);
+  background: var(--bg-card-hover);
+}
+
+.export-test-btn {
+  width: 100%;
+  margin: 2px 0 8px;
+  min-height: 36px;
+  font-size: 11px;
+  gap: 6px;
+}
+
+.export-test-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.export-jira-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 2px;
+  animation: fadeInMsg 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.export-jira-options .export-input[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 420px) {
+  .export-jira-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .export-platforms { grid-template-columns: repeat(3, 1fr); }
+}
+
+.banner-control.export-bug-banner-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  border: none;
+  padding: 0 10px;
+  height: 24px;
+  width: auto;
+  min-width: 80px;
+  border-radius: var(--radius-inner);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+  transition: all 0.15s ease;
+}
+
+.banner-control.export-bug-banner-btn:hover {
+  transform: scale(1.04);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+}
+
+.form-hint {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}

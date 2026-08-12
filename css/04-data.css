@@ -1,0 +1,66 @@
+/* ==========================================================================
+   TAB 2: DATA PRESETS GRID (CHIPS)
+   ========================================================================== */
+
+.bento-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.data-context-actions {
+  display: flex;
+  gap: 3px;
+}
+
+.data-context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-bottom: 7px;
+}
+
+.data-context-grid .bento-select {
+  min-height: 34px;
+}
+
+.dataset-import-btn {
+  position: relative;
+}
+
+.bento-chip {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-inner);
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 44px;
+}
+
+.bento-chip:hover {
+  border-color: var(--border-active);
+  background: var(--bg-card-hover);
+}
+
+.bento-chip.copied {
+  border-color: var(--accent-success);
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.bento-chip code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+.bento-chip span {
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+blob-report/
+artifacts/test-results/
+artifacts/html-report/
+
+# Auth storage state (protected secrets — never commit)
+auth/
+
+# Local backups created during modularization (git is now the source of truth)
+*.bak
+
+# Temporary preview harnesses used for visual verification
+.tmp-*.html
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*.log
+
+# Logs
+*.log
+npm-debug.log*

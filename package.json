@@ -1,0 +1,22 @@
+{
+  "name": "qa-flow-master",
+  "version": "4.2.0",
+  "description": "QA Flow Master - Auto Playwright Test Generator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check shared/contracts.js && node --check background.js && node --check background/state.js && node --check background/cloud.js && node --check background/injection.js && node --check background/runner.js && node --check background/network.js && node --check background/handlers.js && node --check recorder-engine.js && node --check content.js && node --check injected-monitor.js && node --check i18n.js && node --check sidepanel.js && node --check sidepanel/qa-copilot.js && node --check sidepanel/ai-data-generator.js && node --check sidepanel/jam-killer.js && node --check report-template.js && node --check playwright.config.mjs && node --check runner/qa-flow-runner.mjs && node --check tests/qa-flow.spec.mjs",
+    "test": "node --test tests/unit/*.test.mjs",
+    "test:extension": "node --test --test-concurrency=1 tests/extension/*.test.mjs",
+    "qa:auth": "node runner/auth-setup.mjs",
+    "qa:validate": "node runner/validate-suite.mjs",
+    "qa:security": "node runner/security-gate.mjs",
+    "qa:run": "node runner/qa-flow-runner.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "ajv": "^8.20.0",
+    "axe-core": "^4.10.3",
+    "playwright": "^1.55.0"
+  }
+}

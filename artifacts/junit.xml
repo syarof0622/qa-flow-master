@@ -1,0 +1,6 @@
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="1.277045">
+<testsuite name="qa-flow.spec.mjs" timestamp="2026-08-11T04:04:53.478Z" hostname="chromium" tests="1" failures="0" skipped="0" time="0.467" errors="0">
+<testcase name="QA Flow Smoke › QA Flow Smoke" classname="qa-flow.spec.mjs" time="0.467">
+</testcase>
+</testsuite>
+</testsuites>

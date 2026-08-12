@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 2,
+  "environment": { "name": "Public demo", "baseUrl": "https://example.com", "variables": {} },
+  "dataset": { "name": "Default", "rows": [{}] },
+  "suite": {
+    "name": "QA Flow Smoke",
+    "description": "Verifies the automation runner against a stable public page.",
+    "owner": "QA Automation",
+    "priority": "P0",
+    "tags": ["smoke", "ci"],
+    "startUrl": "{{baseUrl}}",
+    "beforeEach": [],
+    "steps": [
+      { "id": "example-heading", "action": "assert_visible", "selector": "h1", "value": "", "description": "Example heading is visible", "enabled": true, "timeout": 10000 },
+      { "id": "example-copy", "action": "assert_text", "selector": "h1", "value": "Example Domain", "description": "Heading content is correct", "enabled": true, "timeout": 10000 }
+    ],
+    "afterEach": []
+  }
+}
