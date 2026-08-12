@@ -119,7 +119,9 @@ RULES:
     const settings = await getAiSettings();
     if (!settings.apiKey) throw new Error('API Key belum diatur. Silakan buka Pengaturan AI untuk memasukkan API Key.');
 
-    if (getState().isRecording) throw new Error('Hentikan perekaman terlebih dahulu sebelum menjalankan AI Agent.');
+    const state = getState();
+    if (state.isRecording) throw new Error('Hentikan perekaman terlebih dahulu sebelum menjalankan AI Agent.');
+    if (state.executionResults?.status === 'RUNNING') throw new Error('Hentikan eksekusi tes yang sedang berjalan sebelum menjalankan AI Agent.');
 
     const tab = await getActiveTab();
     if (!tab?.id) throw new Error('Buka tab website terlebih dahulu untuk menjalankan AI Agent.');
@@ -127,8 +129,6 @@ RULES:
 
     const { AIClient } = await import('../shared/ai-client.js');
     const ai = new AIClient(settings.provider, settings.apiKey, settings.model);
-
-    await ensureBridge(tab.id);
 
     const history = [];
     let steps = [];
@@ -175,6 +175,10 @@ RULES:
         history.push(`${i + 1}. ⚠ ${action.tool} tanpa selector`);
         continue;
       }
+      // content.js (EXECUTE_STEP) does not persist across navigations, so re-ensure
+      // the bridge before every action. Cheap when already injected; re-injects
+      // automatically after the agent navigates (e.g. after clicking a login link).
+      await ensureBridge(tab.id);
       const res = await executeAgentStep(tab.id, step, i + 1);
       history.push(`${i + 1}. ${action.tool} ${step.selector} → ${res.success ? 'OK' : 'GAGAL: ' + (res.error || '')}`);
       await new Promise(r => setTimeout(r, 350));

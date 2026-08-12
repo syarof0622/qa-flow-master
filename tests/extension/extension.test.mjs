@@ -329,8 +329,15 @@ test('ai copilot generates and renders steps from a mocked provider response', a
 
 test('ai sharing agent drives the live page and produces steps', async () => {
   const server = createServer((request, response) => {
+    if (request.url === '/login') {
+      response.writeHead(200, { 'content-type': 'text/html' });
+      response.end('<!doctype html><title>Login</title><form id="loginForm"><input id="email" name="email" placeholder="Email"><input id="password" type="password" placeholder="Password"><button id="submit" type="submit">Masuk</button></form>');
+      return;
+    }
     response.writeHead(200, { 'content-type': 'text/html' });
-    response.end('<!doctype html><title>Agent Fixture</title><button id="login-link" type="button" onclick="document.getElementById(\'form\').style.display=\'block\'">Login</button><div id="form" style="display:none"><input id="email" name="email" placeholder="Email"><input id="password" type="password" placeholder="Password"><button id="submit" type="button">Masuk</button></div>');
+    // A REAL navigation link: clicking it moves to /login, which exercises the
+    // agent's bridge re-injection after navigation.
+    response.end('<!doctype html><title>Agent Fixture</title><a id="login-link" href="/login">Login</a>');
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
@@ -374,12 +381,14 @@ test('ai sharing agent drives the live page and produces steps', async () => {
       document.getElementById('btnSendCopilot').click();
     });
 
-    // The agent must click the login button, then hand over the steps.
+    // The agent must click the login button (navigating to /login), then hand
+    // over the steps. Waiting on the step card proves the whole loop finished.
     await sidepanel.locator('.copilot-action-group').waitFor({ timeout: 25000 });
     await sidepanel.getByText('3 Langkah Tes Di-generate').waitFor();
     assert.equal(await sidepanel.locator('.copilot-step-item').count(), 3);
-    // The live page must have been clicked by the agent (form now visible).
-    await target.locator('#form').waitFor({ state: 'visible', timeout: 8000 });
+    // The live page must have navigated to /login (the agent's click worked).
+    await target.waitForURL(/\/login$/, { timeout: 10000 });
+    await target.locator('#email').waitFor({ state: 'visible', timeout: 8000 });
     assert.equal(await sidepanel.locator('#btnSendCopilot').isEnabled(), true);
     // Cleanup: disable agent mode for other tests.
     await sidepanel.evaluate(() => chrome.storage.local.set({ qa_agent_settings: { enabled: false } }));
