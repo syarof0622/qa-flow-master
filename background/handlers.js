@@ -389,8 +389,15 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
     // them to the active suite, so existing steps never constrain the run.
     case 'RUN_COPILOT_STEPS':
       if (!Array.isArray(payload.steps) || !payload.steps.length) { sendResponse({ status: 'ERROR', error: 'Tidak ada langkah tes untuk dijalankan.' }); break; }
+      // Defense in depth: never trust the renderer alone. Re-validate step actions
+      // against the shared contract, drop unknown actions, and clamp field lengths.
+      const validatedCopilotSteps = payload.steps
+        .filter(step => step && typeof step === 'object' && QAContracts.isSupportedStepAction(step.action))
+        .slice(0, 200)
+        .map(step => ({ ...step, value: String(step.value ?? '').slice(0, 5000), selector: String(step.selector ?? '').slice(0, 5000) }));
+      if (!validatedCopilotSteps.length) { sendResponse({ status: 'ERROR', error: 'Tidak ada langkah tes yang valid untuk dijalankan.' }); break; }
       ensureMonitorInjected(payload.tabId, true, true)
-        .then(() => runTestSuite(payload.tabId, payload.delay || 500, payload.stopOnError ?? true, payload.autoRetryCount ?? 2, payload.scope || {}, payload.steps))
+        .then(() => runTestSuite(payload.tabId, payload.delay || 500, payload.stopOnError ?? true, payload.autoRetryCount ?? 2, payload.scope || {}, validatedCopilotSteps))
         .then(async result => { await disableMonitor(payload.tabId).catch(() => null); sendResponse({ status: 'SUCCESS', result }); })
         .catch(async err => { await disableMonitor(payload.tabId).catch(() => null); sendResponse({ status: 'ERROR', error: err.message }); });
       return true;

@@ -211,27 +211,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     getState: () => currentState,
     getActiveSteps: () => getActiveSteps(),
     announce,
-    // Validate & clamp AI-generated Copilot steps: drop unknown actions, cap the
-    // count, and clamp field lengths so a malformed AI response can never pollute
-    // the suite or fail at runtime.
+    // Validate & clamp AI-generated Copilot steps. The pure implementation lives
+    // in sidepanel/codegen.js so it is unit-testable; here we inject the allowlist.
     sanitizeCopilotSteps(rawSteps) {
-      if (!Array.isArray(rawSteps)) return [];
-      const clean = value => String(value ?? '').slice(0, 5000);
-      const out = [];
-      for (const step of rawSteps.slice(0, 200)) {
-        if (!step || typeof step !== 'object' || !allowedActions.has(step.action)) continue;
-        out.push({
-          action: step.action,
-          selector: clean(step.selector),
-          value: clean(step.value),
-          description: clean(step.description),
-          notes: clean(step.notes),
-          enabled: step.enabled !== false,
-          risk: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(step.risk) ? step.risk : 'MEDIUM',
-          timeout: Math.max(250, Math.min(60000, parseInt(step.timeout, 10) || 5000))
-        });
-      }
-      return out;
+      return sanitizeCopilotSteps(rawSteps, allowedActions);
     },
     // Run a freshly generated Copilot test case directly (no save), so existing
     // suite steps never constrain the run.

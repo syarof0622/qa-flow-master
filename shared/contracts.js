@@ -12,11 +12,24 @@
   ]);
   const actionSet = new Set(actions);
   const mutationActions = new Set(['CREATE_SUITE', 'RENAME_SUITE', 'DUPLICATE_SUITE', 'DELETE_SUITE', 'UPDATE_STEPS', 'APPEND_STEPS', 'CLEAR_STEPS', 'IMPORT_SUITE_DOCUMENT', 'UPDATE_SUITE_METADATA', 'SAVE_ENVIRONMENT', 'SAVE_DATASET', 'SAVE_AI_SETTINGS', 'RESTORE_SUITE_REVISION', 'RESTORE_WORKSPACE_BACKUP', 'APPROVE_VISUAL_BASELINE']);
+  // Step actions an AI/test generator may emit. Mirrors runner/lib/action-registry.mjs
+  // ACTION_NAMES so the renderer allowlist, background validation, and the Playwright
+  // engine all agree on one vocabulary.
+  const stepActions = Object.freeze([
+    'click', 'fill', 'select', 'hover',
+    'assert_visible', 'assert_enabled', 'assert_disabled', 'assert_checked', 'assert_unchecked',
+    'assert_text', 'assert_value', 'assert_attribute', 'assert_css', 'assert_count', 'assert_url',
+    'assert_screenshot', 'assert_network_status', 'assert_no_console_errors', 'assert_a11y', 'assert_performance', 'assert_security_headers',
+    'api_request', 'mock_route', 'clear_mocks', 'use_flow',
+    'wait', 'wait_for_element_hidden', 'wait_for_text', 'wait_for_url_change', 'wait_for_network_idle'
+  ]);
+  const stepActionSet = new Set(stepActions);
+  const isSupportedStepAction = action => stepActionSet.has(String(action || ''));
   function validateMessage(message) {
     if (!message || typeof message !== 'object' || Array.isArray(message)) return { valid: false, error: 'Message harus berupa object.' };
     if (typeof message.action !== 'string' || !actionSet.has(message.action)) return { valid: false, error: `Action tidak dikenal: ${String(message.action || '-')}` };
     if (message.payload !== undefined && (message.payload === null || typeof message.payload !== 'object' || Array.isArray(message.payload))) return { valid: false, error: 'Payload harus berupa object.' };
     return { valid: true };
   }
-  global.QAContracts = Object.freeze({ actions, actionSet, mutationActions, validateMessage });
+  global.QAContracts = Object.freeze({ actions, actionSet, mutationActions, stepActions, stepActionSet, isSupportedStepAction, validateMessage });
 })(typeof self !== 'undefined' ? self : globalThis);

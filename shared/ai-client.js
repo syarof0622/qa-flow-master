@@ -191,6 +191,7 @@ export class AIClient {
 
     const payload = {
       model: selectedModel,
+      max_tokens: 2048,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content }

@@ -4,6 +4,29 @@
 // They are loaded via script tag BEFORE sidepanel.js so callers in the core
 // (and any module) can invoke them. Unit-tested in tests/unit/codegen.test.mjs.
 
+  // Validate & clamp AI-generated Copilot steps: drop unknown actions, cap the
+  // count, and clamp field lengths so a malformed AI response can never pollute
+  // the suite or fail at runtime. Pure — the caller passes the allowlist Set.
+  function sanitizeCopilotSteps(rawSteps, allowedActions = new Set()) {
+    if (!Array.isArray(rawSteps)) return [];
+    const clean = value => String(value ?? '').slice(0, 5000);
+    const out = [];
+    for (const step of rawSteps.slice(0, 200)) {
+      if (!step || typeof step !== 'object' || !allowedActions.has(step.action)) continue;
+      out.push({
+        action: step.action,
+        selector: clean(step.selector),
+        value: clean(step.value),
+        description: clean(step.description),
+        notes: clean(step.notes),
+        enabled: step.enabled !== false,
+        risk: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(step.risk) ? step.risk : 'MEDIUM',
+        timeout: Math.max(250, Math.min(60000, parseInt(step.timeout, 10) || 5000))
+      });
+    }
+    return out;
+  }
+
   function jsLiteral(value) {
     return JSON.stringify(String(value ?? ''));
   }
