@@ -10,18 +10,18 @@ export class AIClient {
     this.model = model;
   }
 
-  async sendPrompt(systemPrompt, userPrompt, context = null, attachments = []) {
+  async sendPrompt(systemPrompt, userPrompt, context = null, attachments = [], history = []) {
     if (!this.apiKey) {
       throw new Error('API Key belum diatur. Silakan masukkan API Key di Pengaturan AI.');
     }
 
     switch (this.provider) {
       case 'gemini':
-        return this._callGemini(systemPrompt, userPrompt, context, attachments);
+        return this._callGemini(systemPrompt, userPrompt, context, attachments, history);
       case 'claude':
-        return this._callClaude(systemPrompt, userPrompt, context, attachments);
+        return this._callClaude(systemPrompt, userPrompt, context, attachments, history);
       case 'deepseek':
-        return this._callDeepseek(systemPrompt, userPrompt, context, attachments);
+        return this._callDeepseek(systemPrompt, userPrompt, context, attachments, history);
       default:
         throw new Error(`Provider AI '${this.provider}' tidak didukung.`);
     }
@@ -45,7 +45,7 @@ export class AIClient {
     }
   }
 
-  async _callGemini(systemPrompt, userPrompt, context, attachments = []) {
+  async _callGemini(systemPrompt, userPrompt, context, attachments = [], history = []) {
     const selectedModel = this.model || 'gemini-2.0-flash';
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`;
 
@@ -77,16 +77,24 @@ export class AIClient {
       }
     }
 
+    const contents = [];
+    if (Array.isArray(history) && history.length > 0) {
+      for (const item of history) {
+        if (item.text) {
+          contents.push({
+            role: item.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: item.text }]
+          });
+        }
+      }
+    }
+    contents.push({ role: 'user', parts });
+
     const payload = {
       systemInstruction: {
         parts: [{ text: systemPrompt }]
       },
-      contents: [
-        {
-          role: 'user',
-          parts
-        }
-      ],
+      contents,
       generationConfig: {
         maxOutputTokens: 4096
       }
@@ -107,7 +115,7 @@ export class AIClient {
     return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   }
 
-  async _callClaude(systemPrompt, userPrompt, context, attachments = []) {
+  async _callClaude(systemPrompt, userPrompt, context, attachments = [], history = []) {
     const selectedModel = this.model || 'claude-3-haiku-20240307';
     const endpoint = 'https://api.anthropic.com/v1/messages';
     
@@ -141,13 +149,24 @@ export class AIClient {
       }
     }
 
+    const messages = [];
+    if (Array.isArray(history) && history.length > 0) {
+      for (const item of history) {
+        if (item.text) {
+          messages.push({
+            role: item.role === 'assistant' ? 'assistant' : 'user',
+            content: item.text
+          });
+        }
+      }
+    }
+    messages.push({ role: 'user', content: contentBlocks });
+
     const payload = {
       model: selectedModel,
       max_tokens: 2048,
       system: systemPrompt,
-      messages: [
-        { role: 'user', content: contentBlocks }
-      ]
+      messages
     };
 
     const response = await this._fetchWithTimeout(endpoint, {
@@ -170,7 +189,7 @@ export class AIClient {
     return data.content?.[0]?.text || '';
   }
 
-  async _callDeepseek(systemPrompt, userPrompt, context, attachments = []) {
+  async _callDeepseek(systemPrompt, userPrompt, context, attachments = [], history = []) {
     const selectedModel = this.model || 'deepseek-chat';
     const endpoint = 'https://api.deepseek.com/chat/completions';
     
@@ -189,13 +208,27 @@ export class AIClient {
       }
     }
 
+    const messages = [
+      { role: 'system', content: systemPrompt }
+    ];
+
+    if (Array.isArray(history) && history.length > 0) {
+      for (const item of history) {
+        if (item.text) {
+          messages.push({
+            role: item.role === 'assistant' ? 'assistant' : 'user',
+            content: item.text
+          });
+        }
+      }
+    }
+
+    messages.push({ role: 'user', content });
+
     const payload = {
       model: selectedModel,
       max_tokens: 2048,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content }
-      ]
+      messages
     };
 
     const response = await this._fetchWithTimeout(endpoint, {

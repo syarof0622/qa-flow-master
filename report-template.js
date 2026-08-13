@@ -27,7 +27,16 @@ const QAReportTemplate = {
       if (safeSource && !screenshots.some(item => item.src === safeSource)) screenshots.push({ src: safeSource, title, caption });
     };
     addScreenshot(meta.pageScreenshot, 'Final page state', 'Snapshot captured when this report was generated.');
-    steps.forEach(step => addScreenshot(step.screenshot, `Failure evidence · Step ${Number(step.stepIndex) || '-'}`, step.error || step.description || 'Captured at failure.'));
+    steps.forEach(step => {
+      if (step.screenshot) {
+        const isFailure = String(step.status).toUpperCase() === 'FAILED';
+        const title = isFailure 
+          ? `Failure evidence · Step ${Number(step.stepIndex) || '-'}` 
+          : `Step ${Number(step.stepIndex) || '-'} · ${step.action}`;
+        const caption = step.error || step.description || (isFailure ? 'Captured at failure.' : 'Visual evidence of step execution.');
+        addScreenshot(step.screenshot, title, caption);
+      }
+    });
 
     const network = results.networkStatus || {};
     const region = String(network.countryCode || '').toUpperCase();
@@ -125,7 +134,7 @@ const QAReportTemplate = {
     const status = String(step.status || 'UNKNOWN').toUpperCase();
     const hasDetails = step.error || step.expected != null || step.actual != null || step.healed || step.domSnippet;
     const input = step.value !== undefined && step.value !== '' ? step.value : (step.expected ?? '-');
-    return `<tr><td class="num">${Number(step.stepIndex) || '-'}</td><td><span class="code">${this.escapeHTML(String(step.action || 'unknown').toUpperCase())}</span></td><td><span class="code">${this.escapeHTML(step.selector || step.usedSelector || '-')}</span></td><td>${this.escapeHTML(input)}</td><td><span class="status ${this.safeStatusClass(status)}">${this.escapeHTML(status)}</span></td><td class="duration">${this.formatDuration(Number(step.executionTimeMs) || 0)}</td></tr>${hasDetails ? `<tr class="detail-row"><td colspan="6"><div class="failure"><div class="failure-grid">${step.error ? `<p class="wide"><strong>Failure:</strong> ${this.escapeHTML(step.error)}</p>` : ''}${step.expected != null ? `<p><strong>Expected:</strong> ${this.escapeHTML(step.expected)}</p>` : ''}${step.actual != null ? `<p><strong>Actual:</strong> ${this.escapeHTML(step.actual)}</p>` : ''}${step.attempts ? `<p><strong>Attempts:</strong> ${Number(step.attempts) || 1}</p>` : ''}${step.usedSelector ? `<p class="wide"><strong>Locator:</strong> <span class="code">${this.escapeHTML(step.usedSelector)}</span>${step.healed ? ' · fallback used' : ''}</p>` : ''}</div></div></td></tr>` : ''}`;
+    return `<tr><td class="num">${Number(step.stepIndex) || '-'}</td><td><span class="code">${this.escapeHTML(String(step.action || 'unknown').toUpperCase())}</span></td><td><span class="code">${this.escapeHTML(step.selector || step.usedSelector || '-')}</span></td><td>${this.escapeHTML(input)}</td><td><span class="status ${this.safeStatusClass(status)}">${this.escapeHTML(status)}</span></td><td class="duration">${this.formatDuration(Number(step.executionTimeMs) || 0)}</td></tr>${hasDetails ? `<tr class="detail-row"><td colspan="6"><div class="failure"><div class="failure-grid">${step.error ? `<p class="wide"><strong>Failure:</strong> ${this.escapeHTML(step.error)}</p>` : ''}${step.expected != null ? `<p><strong>Expected:</strong> ${this.escapeHTML(step.expected)}</p>` : ''}${step.actual != null ? `<p><strong>Actual:</strong> ${this.escapeHTML(step.actual)}</p>` : ''}${step.attempts ? `<p><strong>Attempts:</strong> ${Number(step.attempts) || 1}</p>` : ''}${step.usedSelector ? `<p class="wide"><strong>Locator:</strong> <span class="code">${this.escapeHTML(step.usedSelector)}</span>${step.healed ? ' · fallback used' : ''}</p>` : ''}${step.domSnippet ? `<p class="wide"><strong>DOM Context:</strong> <span class="code">${this.escapeHTML(step.domSnippet)}</span></p>` : ''}</div></div></td></tr>` : ''}`;
   },
 
   renderLog(log = {}) {

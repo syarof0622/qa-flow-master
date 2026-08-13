@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 300px;
+  min-height: 0;
   padding: 12px;
   gap: 10px;
   background: var(--bg-card);
@@ -208,6 +208,10 @@ body.light-theme .copilot-msg.error .msg-bubble {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-inner);
   margin-top: 4px;
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 46px;
+  z-index: 10;
 }
 
 .copilot-attachment-chip {
@@ -257,10 +261,15 @@ body.light-theme .copilot-msg.error .msg-bubble {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-inner);
   padding: 6px 8px 6px 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   margin-top: 4px;
   flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .copilot-input-area:focus-within {
@@ -377,9 +386,9 @@ body.light-theme .ctd-menu {
 }
 
 body.light-theme .copilot-input-area {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.96);
   border-color: #cbd5e1;
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.08);
 }
 
 .copilot-input-area:focus-within {
@@ -534,32 +543,82 @@ body.light-theme .bento-inline-code {
 
 .bento-code-card {
   margin: 8px 0;
-  border-radius: var(--radius-inner);
+  border-radius: 8px;
   border: 1px solid var(--border-subtle);
   overflow: hidden;
-  background: #0f172a;
+  background: #0d1117;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+
+.bento-mac-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+}
+
+.mac-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.mac-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.mac-dot.red { background: #ff5f56; border: 1px solid #e0443e; }
+.mac-dot.yellow { background: #ffbd2e; border: 1px solid #dea123; }
+.mac-dot.green { background: #27c93f; border: 1px solid #1aab29; }
 
 .code-card-header {
   font-family: var(--font-mono);
-  font-size: 9.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #94a3b8;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: lowercase;
+  color: #8b949e;
+}
+
+.bento-copy-btn {
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+.bento-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #c9d1d9;
+}
+.bento-copy-btn:active {
+  transform: scale(0.95);
 }
 
 .bento-code-block {
-  padding: 10px;
+  padding: 12px;
   font-family: var(--font-mono);
   font-size: 11px;
-  line-height: 1.45;
-  color: #f8fafc;
+  line-height: 1.5;
+  color: #c9d1d9;
   overflow-x: auto;
   margin: 0;
 }
+
+/* Syntax Highlighting Tokens */
+.sy-keyword { color: #ff7b72; font-weight: 600; }
+.sy-string { color: #a5d6ff; }
+.sy-number { color: #79c0ff; }
+.sy-comment { color: #8b949e; font-style: italic; }
+.sy-function { color: #d2a8ff; font-weight: 600; }
+.sy-operator { color: #ff7b72; }
+.sy-property { color: #79c0ff; }
 
 .copilot-step-preview {
   margin-top: 8px;
@@ -588,6 +647,149 @@ body.light-theme .copilot-step-item {
   border-bottom-color: #cbd5e1;
   color: #0f172a;
 }
+
+/* Typing Indicator Animation */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px;
+}
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* Markdown Table & Blockquote */
+.bento-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin: 8px 0;
+  border-radius: 4px;
+}
+.bento-chat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.bento-chat-table th, .bento-chat-table td {
+  border: 1px solid var(--border-subtle);
+  padding: 6px 8px;
+  text-align: left;
+}
+.bento-chat-table th {
+  background: var(--bg-input);
+  font-weight: 600;
+}
+.bento-chat-blockquote {
+  border-left: 3px solid var(--accent-primary);
+  margin: 8px 0;
+  padding-left: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent-primary) 10%, transparent), transparent);
+  padding: 6px 10px;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Link Styling */
+.bento-chat-link {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+}
+.bento-chat-link:hover {
+  text-decoration: underline;
+}
+
+/* Task List Styling */
+.bento-chat-list.task-list {
+  list-style: none;
+  padding-left: 4px;
+}
+.task-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.task-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+.task-checkbox.checked {
+  color: #27c93f;
+}
+
+/* GitHub-Style Alerts */
+.bento-alert {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border-left: 4px solid;
+  background: var(--bg-card);
+  font-size: 11px;
+}
+body.light-theme .bento-alert {
+  background: #f8fafc;
+}
+.bento-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 11px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.bento-alert-content {
+  color: var(--text-main);
+}
+.bento-alert-content p {
+  margin: 0 0 6px 0;
+}
+.bento-alert-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Alert Colors */
+.bento-alert-note {
+  border-left-color: #3b82f6;
+  background: color-mix(in srgb, #3b82f6 8%, transparent);
+}
+.bento-alert-note .bento-alert-title { color: #3b82f6; }
+
+.bento-alert-tip {
+  border-left-color: #10b981;
+  background: color-mix(in srgb, #10b981 8%, transparent);
+}
+.bento-alert-tip .bento-alert-title { color: #10b981; }
+
+.bento-alert-warning {
+  border-left-color: #f59e0b;
+  background: color-mix(in srgb, #f59e0b 8%, transparent);
+}
+.bento-alert-warning .bento-alert-title { color: #f59e0b; }
+
+.bento-alert-important {
+  border-left-color: #8b5cf6;
+  background: color-mix(in srgb, #8b5cf6 8%, transparent);
+}
+.bento-alert-important .bento-alert-title { color: #8b5cf6; }
 
 .copilot-step-item:last-child {
   border-bottom: none;
@@ -623,49 +825,41 @@ body.light-theme .copilot-step-item {
   font-weight: 700;
   border-radius: var(--radius-inner);
   cursor: pointer;
-  transition: all 0.15s ease;
-  border: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
   white-space: nowrap;
 }
 
+/* 1. Append (Ghost / Outline) */
 .copilot-action-btn.append {
-  background: var(--bg-card);
-  color: var(--text-main);
-  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--accent-primary);
+  border-color: color-mix(in srgb, var(--accent-primary) 30%, transparent);
 }
-
-body.light-theme .copilot-action-btn.append {
-  background: #ffffff;
-  color: #0f172a;
-  border-color: #cbd5e1;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
-}
-
 .copilot-action-btn.append:hover {
+  background: color-mix(in srgb, var(--accent-primary) 5%, transparent);
   border-color: var(--accent-primary);
-  background: var(--bg-card-hover);
 }
 
+/* 2. Run Only (Light Fill) */
 .copilot-action-btn.run {
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  color: var(--accent-primary);
 }
-
 .copilot-action-btn.run:hover {
-  transform: scale(1.03);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+  background: color-mix(in srgb, var(--accent-primary) 20%, transparent);
+  transform: translateY(-1px);
 }
 
+/* 3. Save & Run (Solid Primary) */
 .copilot-action-btn.save-run {
-  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 80%, black) 100%);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent-primary) 30%, transparent);
 }
-
 .copilot-action-btn.save-run:hover {
-  transform: scale(1.03);
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent-primary) 45%, transparent);
 }
 
 .copilot-action-btn:disabled {

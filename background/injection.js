@@ -1,12 +1,70 @@
-async function captureTabScreenshot() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab?.id) {
-    try { await chrome.tabs.sendMessage(tab.id, { action: 'APPLY_PRIVACY_MASK' }); } catch (error) {}
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000; // 32768 bytes
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
   }
+  return btoa(binary);
+}
+
+async function captureTabScreenshot(targetTabId, options = { highQuality: false }) {
+  let targetTab = null;
+  let windowId = null;
+
+  if (targetTabId) {
+    try {
+      targetTab = await chrome.tabs.get(targetTabId);
+      if (targetTab && !targetTab.active) {
+        await chrome.tabs.update(targetTabId, { active: true });
+        // Give the browser a moment to paint the activated tab
+        await new Promise(r => setTimeout(r, 150));
+      }
+      windowId = targetTab ? targetTab.windowId : null;
+    } catch (e) {
+      // Fallback to active tab if get fails
+    }
+  }
+
+  if (!targetTab) {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    targetTab = tabs[0];
+  }
+  
+  if (targetTab?.id) {
+    try { await chrome.tabs.sendMessage(targetTab.id, { action: 'APPLY_PRIVACY_MASK' }); } catch (error) {}
+  }
+  
+  let dataUrl = null;
   try {
-    return await new Promise(resolve => chrome.tabs.captureVisibleTab(null, { format: 'png' }, dataUrl => resolve(chrome.runtime.lastError ? null : dataUrl)));
+    // If high quality is needed (Visual Assertion), use PNG to avoid compression artifacts that break pixel matching
+    if (options.highQuality) {
+      dataUrl = await new Promise(resolve => chrome.tabs.captureVisibleTab(windowId, { format: 'png' }, res => resolve(chrome.runtime.lastError ? null : res)));
+    } else {
+      // Capture as JPEG initially for speed
+      dataUrl = await new Promise(resolve => chrome.tabs.captureVisibleTab(windowId, { format: 'jpeg', quality: 80 }, res => resolve(chrome.runtime.lastError ? null : res)));
+    }
   } finally {
-    if (tab?.id) try { await chrome.tabs.sendMessage(tab.id, { action: 'CLEAR_PRIVACY_MASK' }); } catch (error) {}
+    if (targetTab?.id) try { await chrome.tabs.sendMessage(targetTab.id, { action: 'CLEAR_PRIVACY_MASK' }); } catch (error) {}
+  }
+
+  if (!dataUrl || options.highQuality) {
+    return dataUrl;
+  }
+
+  // Convert to highly compressed WebP via OffscreenCanvas for max evidence efficiency
+  try {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    const bitmap = await createImageBitmap(blob);
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    const ctx = canvas.getContext('2d', { alpha: false });
+    ctx.drawImage(bitmap, 0, 0);
+    const webpBlob = await canvas.convertToBlob({ type: 'image/webp', quality: 0.5 });
+    const buffer = await webpBlob.arrayBuffer();
+    return `data:image/webp;base64,${arrayBufferToBase64(buffer)}`;
+  } catch (e) {
+    return dataUrl; // fallback if conversion fails
   }
 }
 

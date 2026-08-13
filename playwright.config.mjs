@@ -39,9 +39,9 @@ export default defineConfig({
     ignoreHTTPSErrors: process.env.QA_IGNORE_HTTPS_ERRORS === 'true',
     locale: process.env.QA_LOCALE || 'id-ID',
     timezoneId: process.env.QA_TIMEZONE || 'Asia/Jakarta',
-    screenshot: 'only-on-failure',
-    trace: 'retain-on-failure',
-    video: 'retain-on-failure'
+    screenshot: 'on',
+    trace: 'on',
+    video: 'on'
   },
   projects
 });

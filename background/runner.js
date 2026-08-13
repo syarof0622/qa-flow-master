@@ -114,7 +114,7 @@ async function runTestSuite(tabId, delayBetweenSteps = 500, stopOnError = true, 
         attempts++;
         const resolvedStep = resolveStepVariables(step);
         if (['assert_no_console_errors', 'assert_network_status', 'assert_screenshot', 'assert_security_headers', 'api_request'].includes(step.action)) {
-          stepResult = await executeBackgroundAssertion(resolvedStep);
+          stepResult = await executeBackgroundAssertion(resolvedStep, tabId);
         } else {
           stepResult = await sendStepCommandToTab(tabId, resolvedStep, {
             action: 'EXECUTE_STEP',
@@ -131,9 +131,7 @@ async function runTestSuite(tabId, delayBetweenSteps = 500, stopOnError = true, 
       }
 
       let screenshot = null;
-      if (!stepResult.success) {
-        try { screenshot = await captureTabScreenshot(); } catch (e) {}
-      }
+      try { screenshot = await captureTabScreenshot(tabId, { highQuality: false }); } catch (e) {}
 
       const isSlow = (stepResult.duration || 0) > (step.performanceThreshold || 3000);
 
@@ -192,7 +190,7 @@ async function runTestSuite(tabId, delayBetweenSteps = 500, stopOnError = true, 
       }
     } catch (err) {
       let screenshot = null;
-      try { screenshot = await captureTabScreenshot(); } catch (e) {}
+      try { screenshot = await captureTabScreenshot(tabId, { highQuality: false }); } catch (e) {}
 
       qaState.execution.patchResults({ failedSteps: qaState.execution.results().failedSteps + 1 });
       qaState.execution.results().stepDetails.push({
@@ -245,7 +243,7 @@ function resolveStepVariables(step) {
   return { ...step, selector: interpolate(step.selector), value: interpolate(step.value), fallbackSelectors: (step.fallbackSelectors || []).map(interpolate) };
 }
 
-async function executeBackgroundAssertion(step) {
+async function executeBackgroundAssertion(step, tabId) {
   const start = Date.now();
   if (step.action === 'api_request') return executeApiRequestStep(step, start);
   if (step.action === 'assert_security_headers') {
@@ -259,7 +257,7 @@ async function executeBackgroundAssertion(step) {
     } catch (error) { return { success: false, error: `Security header check failed: ${error.message}`, duration: Date.now() - start }; }
   }
   if (step.action === 'assert_screenshot') {
-    const current = await captureTabScreenshot();
+    const current = await captureTabScreenshot(tabId, { highQuality: true });
     if (!current) return { success: false, error: 'Screenshot tidak tersedia', duration: Date.now() - start };
     let visualConfig = {};
     try { visualConfig = step.value?.trim()?.startsWith('{') ? JSON.parse(step.value) : { threshold: parseFloat(step.value) }; } catch (error) { return { success: false, error: `Konfigurasi visual tidak valid: ${error.message}`, duration: Date.now() - start }; }
