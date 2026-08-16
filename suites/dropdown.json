@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 2,
+  "environment": { "name": "Public QA sandbox", "baseUrl": "https://the-internet.herokuapp.com", "variables": {} },
+  "dataset": { "name": "Default", "rows": [{}] },
+  "suite": {
+    "name": "Dropdown - Select Control",
+    "description": "Demonstrates select/assert_value against a real <select> element with a disabled placeholder option.",
+    "owner": "QA Automation",
+    "priority": "P2",
+    "tags": ["form-controls", "ci"],
+    "startUrl": "{{baseUrl}}/dropdown",
+    "beforeEach": [],
+    "steps": [
+      { "id": "select-option-2", "action": "select", "selector": "#dropdown", "value": "2", "description": "Pilih Option 2 dari dropdown", "enabled": true, "timeout": 10000 },
+      { "id": "assert-dropdown-value", "action": "assert_value", "selector": "#dropdown", "value": "2", "description": "Nilai dropdown sesuai pilihan", "enabled": true, "timeout": 10000 }
+    ],
+    "afterEach": []
+  }
+}

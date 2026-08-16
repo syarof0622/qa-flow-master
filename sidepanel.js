@@ -142,6 +142,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnSetSecrets = document.getElementById('btnSetSecrets');
   const datasetInput = document.getElementById('datasetInput');
   const datasetSelector = document.getElementById('datasetSelector');
+  const btnRunAllRows = document.getElementById('btnRunAllRows');
+  const btnRunAllRowsLabel = document.getElementById('btnRunAllRowsLabel');
   const bentoLiveRegion = document.getElementById('bentoLiveRegion');
   const qaWorkspaceOverlay = document.getElementById('qaWorkspaceOverlay');
   const qaWorkspaceEyebrow = document.getElementById('qaWorkspaceEyebrow');
@@ -151,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Canonical set of supported step actions (shared by import validation and
   // AI/Copilot step sanitization).
-  const allowedActions = new Set(['click', 'fill', 'select', 'hover', 'assert_visible', 'assert_enabled', 'assert_disabled', 'assert_checked', 'assert_unchecked', 'assert_text', 'assert_value', 'assert_attribute', 'assert_css', 'assert_count', 'assert_url', 'assert_screenshot', 'assert_network_status', 'assert_no_console_errors', 'assert_a11y', 'assert_performance', 'assert_security_headers', 'api_request', 'mock_route', 'clear_mocks', 'use_flow', 'wait', 'wait_for_element_hidden', 'wait_for_text', 'wait_for_url_change', 'wait_for_network_idle']);
+  const allowedActions = new Set(['click', 'fill', 'select', 'hover', 'press', 'go_back', 'go_forward', 'assert_visible', 'assert_enabled', 'assert_disabled', 'assert_checked', 'assert_unchecked', 'assert_text', 'assert_value', 'assert_attribute', 'assert_css', 'assert_count', 'assert_url', 'assert_screenshot', 'assert_network_status', 'assert_no_console_errors', 'assert_a11y', 'assert_performance', 'assert_security_headers', 'api_request', 'mock_route', 'clear_mocks', 'use_flow', 'wait', 'wait_for_element_hidden', 'wait_for_text', 'wait_for_url_change', 'wait_for_network_idle']);
 
   // ========================================
   // SHARED HELPERS EXPOSED TO LATER DOMContentLoaded BLOCKS (QA Copilot, AI Data)
@@ -797,6 +799,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const file = datasetInput.files?.[0];
     if (!file) return;
     try {
+      // .xlsx/.xls binary parsing needs a third-party library, and the only
+      // actively-published npm package for it (xlsx/SheetJS) currently ships
+      // unpatched high-severity prototype-pollution/ReDoS advisories with no
+      // fix available - not worth the risk for a feature CSV already covers.
+      // Guide the user to the one-click "Save As > CSV" export instead.
+      if (/\.xlsx?$/i.test(file.name)) {
+        throw new Error('File Excel (.xlsx/.xls) belum didukung langsung. Buka file-nya di Excel/Google Sheets, lalu "Save As" atau "Export" ke format CSV, kemudian import file CSV tersebut di sini.');
+      }
       const text = await file.text();
       let rows;
       if (file.name.toLowerCase().endsWith('.csv')) rows = parseCsvDataset(text);
@@ -832,7 +842,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const lines = text.split(/\r?\n/).filter(line => line.trim());
     const headers = parseLine(lines.shift() || '');
     if (!headers.length || headers.some(header => !header)) throw new Error('Header CSV tidak valid.');
-    return lines.slice(0, 1000).map(line => Object.fromEntries(headers.map((header, index) => [header, parseLine(line)[index] || ''])));
+    return lines.slice(0, 20000).map(line => Object.fromEntries(headers.map((header, index) => [header, parseLine(line)[index] || ''])));
   }
 
   // ========================================
@@ -1003,6 +1013,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         showBentoAlert('Recorder terputus', message.error || 'Muat ulang halaman target lalu mulai merekam kembali.', '⚠️');
         break;
       case 'EXECUTION_STARTED':
+        // During a bulk (all-dataset-rows) run, the bulk loop below owns the
+        // banner itself (row X/Y · N sukses · M gagal) - letting this handler
+        // also fire per row would clobber that progress every single row and
+        // even auto-hide the banner mid-batch (see EXECUTION_FINISHED).
+        if (bulkRunActive) break;
         btnPauseExecution?.classList.remove('hidden');
         btnStopExecution?.classList.remove('hidden');
         if (btnPauseExecution) {
@@ -1022,6 +1037,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (message.control?.paused) showExecutionBanner(true, 'paused', message.control?.reason === 'breakpoint' ? `Breakpoint · Step ${message.control.stepIndex}` : 'Eksekusi dijeda', 'Klik lanjutkan untuk meneruskan', Number(progressBar?.getAttribute('aria-valuenow') || 0));
         break;
       case 'STEP_EXECUTION_START': {
+        if (bulkRunActive) { highlightActiveExecutingStep(message.stepIndex); break; }
         const total = message.totalSteps || getActiveSteps().length || 1;
         const pct = Math.round(((message.sequenceIndex || message.stepIndex) / total) * 100);
         showExecutionBanner(true, 'running', `Step ${message.sequenceIndex || message.stepIndex} dari ${total}`, `${message.step.action}${message.step.selector ? ` · ${message.step.selector}` : ''}`, pct);
@@ -1032,6 +1048,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateReportSummary(message.results);
         break;
       case 'EXECUTION_FINISHED': {
+        if (bulkRunActive) break;
         btnPauseExecution?.classList.add('hidden');
         btnStopExecution?.classList.add('hidden');
         const isOk = message.results.status === 'COMPLETED';
@@ -1085,7 +1102,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const paused = btnPauseExecution.dataset.paused === 'true';
     await sendRuntimeMessage(paused ? 'RESUME_EXECUTION' : 'PAUSE_EXECUTION');
   });
-  btnStopExecution?.addEventListener('click', () => sendRuntimeMessage('STOP_EXECUTION'));
+  btnStopExecution?.addEventListener('click', () => {
+    // Mid-batch cancel: stop the row currently in flight AND stop the bulk
+    // loop from starting the next row (bulkRunCancelRequested is declared
+    // further down, checked by runBulkDatasetRows between rows).
+    bulkRunCancelRequested = true;
+    sendRuntimeMessage('STOP_EXECUTION');
+  });
 
   btnTestMonitor?.addEventListener('click', async () => {
     const activeTab = await getActiveTab();
@@ -1250,10 +1273,166 @@ document.addEventListener('DOMContentLoaded', async () => {
   // RECORDING UI — moved to sidepanel/recording-ui.js (reads window.QAFlow.ui)
   // btnRecord + btnRecordScreen click handlers live there; render helpers stay here.
 
+  // ========================================
+  // BULK DATA-ENTRY: run the active suite once per dataset row (fill → submit
+  // → the recorded steps must themselves include reopening/resetting the
+  // form, e.g. clicking "Submit another response" on a Google Form), looping
+  // through hundreds/thousands of rows imported from CSV. Unlike the plain
+  // single run, this NEVER aborts the whole batch on one row's failure - it
+  // records that row as failed and keeps going, because with thousands of
+  // rows a single bad value must not block the rest.
+  // ========================================
+  let bulkRunActive = false;
+  let bulkRunCancelRequested = false;
+  const BULK_CHECKPOINT_KEY = 'qa_bulk_run_checkpoint';
+
+  // rowIndices: null runs every row 0..total-1 (the normal path); an explicit
+  // array (used by "retry failed rows") runs only those specific row indices,
+  // in order, and never touches/checks the resume checkpoint (a partial retry
+  // is not "the batch", so it should not be resumable/checkpointed itself).
+  async function runBulkDatasetRows(runPayload, activeDataset, rowIndices = null) {
+    const isEn = currentAppLanguage === 'en';
+    const isRetryPass = Array.isArray(rowIndices);
+    const total = activeDataset.rows.length;
+    const originalRow = currentState.activeDatasetRow || 0;
+    let rowResults = []; // { row, status: 'PASSED'|'FAILED', failedSteps, error }
+    let successCount = 0;
+    let failCount = 0;
+    let queue = isRetryPass ? [...rowIndices] : Array.from({ length: total }, (_, i) => i);
+
+    // Offer to resume an interrupted run of the SAME dataset (browser/tab
+    // closed, extension reloaded, crash, etc. mid-batch) instead of always
+    // restarting from row 0 - important once a batch is hundreds/thousands
+    // of rows long, where redoing already-completed rows wastes real time.
+    if (!isRetryPass) {
+      const checkpoint = await new Promise(resolve => chrome.storage.local.get(BULK_CHECKPOINT_KEY, res => resolve(res?.[BULK_CHECKPOINT_KEY] || null)));
+      if (checkpoint?.datasetId === activeDataset.id && Array.isArray(checkpoint.rowResults) && checkpoint.rowResults.length > 0 && checkpoint.rowResults.length < total) {
+        const doneRows = new Set(checkpoint.rowResults.map(r => r.row));
+        const resume = await showBentoConfirm(
+          isEn ? 'Resume Unfinished Batch?' : 'Lanjutkan Proses yang Belum Selesai?',
+          isEn
+            ? `An earlier run of "${activeDataset.name}" stopped at ${checkpoint.rowResults.length}/${total} rows. Resume from row ${checkpoint.rowResults.length + 1}, or start over from row 1?`
+            : `Proses sebelumnya untuk "${activeDataset.name}" terhenti di baris ${checkpoint.rowResults.length}/${total}. Lanjutkan dari baris ${checkpoint.rowResults.length + 1}, atau mulai ulang dari baris 1?`,
+          { icon: '⏯️', confirmText: isEn ? 'Resume' : 'Lanjutkan' }
+        );
+        if (resume) {
+          rowResults = [...checkpoint.rowResults];
+          successCount = rowResults.filter(r => r.status === 'PASSED').length;
+          failCount = rowResults.filter(r => r.status === 'FAILED').length;
+          queue = queue.filter(row => !doneRows.has(row));
+        } else {
+          await new Promise(resolve => chrome.storage.local.remove(BULK_CHECKPOINT_KEY, resolve));
+        }
+      }
+    }
+
+    bulkRunActive = true;
+    bulkRunCancelRequested = false;
+    btnStopExecution?.classList.remove('hidden');
+    btnRunSuite.disabled = true;
+    if (btnRunAllRows) { btnRunAllRows.disabled = true; }
+    const startedAt = Date.now();
+    // How many rows THIS invocation is responsible for: every row for a full
+    // run (whether resumed or not - rowResults may already contain some from
+    // a resumed checkpoint), or just the specific failed rows for a retry pass.
+    const targetCount = isRetryPass ? rowIndices.length : total;
+    let processedThisSession = 0; // excludes rows restored from a resumed checkpoint, for accurate ETA
+
+    const renderProgress = (state = 'running') => {
+      const pct = Math.round((rowResults.length / targetCount) * 100) || 0;
+      const elapsedS = (Date.now() - startedAt) / 1000;
+      const avgPerRow = processedThisSession > 0 ? elapsedS / processedThisSession : 0;
+      const etaS = avgPerRow ? Math.max(0, Math.round(avgPerRow * queue.length)) : null;
+      const etaUnit = etaS != null && etaS < 60 ? (isEn ? 's' : 'd') : (isEn ? 'min' : 'mnt');
+      const etaValue = etaS != null && etaS < 60 ? etaS : Math.round(etaS / 60);
+      const etaText = etaS != null && state === 'running' ? ` · ${isEn ? 'remaining' : 'sisa'} ~${etaValue}${etaUnit}` : '';
+      const title = state === 'cancelled'
+        ? (isEn ? 'Bulk data entry stopped' : 'Bulk data entry dihentikan')
+        : state === 'running'
+          ? (isRetryPass ? (isEn ? 'Retrying Failed Rows' : 'Mencoba Ulang Baris Gagal') : 'Bulk Data Entry')
+          : (isEn ? 'Bulk Data Entry finished' : 'Bulk Data Entry selesai');
+      const detail = isEn
+        ? `Row ${rowResults.length}/${targetCount} · ${successCount} passed · ${failCount} failed${etaText}`
+        : `Baris ${rowResults.length}/${targetCount} · ${successCount} sukses · ${failCount} gagal${etaText}`;
+      showExecutionBanner(true, state, title, detail, pct);
+    };
+
+    renderProgress('running');
+    try {
+      while (queue.length) {
+        if (bulkRunCancelRequested) break;
+        const row = queue.shift();
+        await sendRuntimeMessage('SET_ACTIVE_DATASET', { id: activeDataset.id, row });
+        let result;
+        try {
+          result = await sendRuntimeMessage('RUN_TEST_SUITE', runPayload);
+        } catch (err) {
+          result = { status: 'ERROR', error: err?.message };
+        }
+        const failedSteps = result?.result?.failedSteps || 0;
+        const ok = result?.status === 'SUCCESS' && !failedSteps;
+        if (ok) successCount++; else failCount++;
+        processedThisSession++;
+        rowResults = rowResults.filter(r => r.row !== row); // a retried row replaces its old result
+        rowResults.push({
+          row,
+          status: ok ? 'PASSED' : 'FAILED',
+          failedSteps,
+          error: result?.error || result?.result?.stepDetails?.find(s => s.status === 'FAILED')?.error || null
+        });
+        if (!isRetryPass) {
+          chrome.storage.local.set({ [BULK_CHECKPOINT_KEY]: { datasetId: activeDataset.id, rowResults, savedAt: new Date().toISOString() } });
+        }
+        renderProgress('running');
+        if (bulkRunCancelRequested) break;
+      }
+    } finally {
+      await sendRuntimeMessage('SET_ACTIVE_DATASET', { id: activeDataset.id, row: originalRow });
+      bulkRunActive = false;
+      btnStopExecution?.classList.add('hidden');
+      btnRunSuite.disabled = false;
+      if (btnRunAllRows) btnRunAllRows.disabled = false;
+    }
+
+    const cancelledEarly = bulkRunCancelRequested && queue.length > 0;
+    renderProgress(cancelledEarly ? 'cancelled' : failCount > 0 ? 'failed' : 'passed');
+
+    // A full (non-retry) batch that ran to completion - even with some rows
+    // failed - is "done": clear the resume checkpoint. Only a genuine
+    // cancellation (or a crash, which just leaves the checkpoint in place
+    // for next time) should keep it around.
+    if (!isRetryPass && !cancelledEarly) {
+      chrome.storage.local.remove(BULK_CHECKPOINT_KEY);
+    }
+
+    const failedRows = rowResults.filter(r => r.status === 'FAILED').sort((a, b) => a.row - b.row);
+    console.log(`[Bulk Data Entry] ${rowResults.length}/${targetCount} rows processed · ${successCount} passed · ${failCount} failed.`, failedRows.length ? { failedRows } : '');
+    if (failedRows.length) {
+      const preview = failedRows.slice(0, 10).map(r => isEn ? `Row ${r.row + 1}: ${r.error || `${r.failedSteps} step(s) failed`}` : `Baris ${r.row + 1}: ${r.error || `${r.failedSteps} langkah gagal`}`).join('\n');
+      const more = failedRows.length > 10 ? (isEn ? `\n… and ${failedRows.length - 10} more row(s)` : `\n… dan ${failedRows.length - 10} baris lainnya`) : '';
+      const askRetry = isEn ? '\n\nRetry only the failed rows now?' : '\n\nCoba ulang HANYA baris yang gagal sekarang?';
+      const wantsRetry = await showBentoConfirm(
+        cancelledEarly
+          ? (isEn ? 'Bulk Data Entry Stopped' : 'Bulk Data Entry Dihentikan')
+          : (isEn ? 'Bulk Data Entry Finished (some failed)' : 'Bulk Data Entry Selesai (ada yang gagal)'),
+        (isEn
+          ? `${successCount} row(s) passed, ${failCount} row(s) failed out of ${rowResults.length} processed.\n\nFailed rows (see console for the full list):\n${preview}${more}${askRetry}`
+          : `${successCount} baris sukses, ${failCount} baris gagal dari ${rowResults.length} diproses.\n\nBaris yang gagal (lihat console untuk daftar lengkap):\n${preview}${more}${askRetry}`),
+        { icon: '⚠️', confirmText: isEn ? 'Retry Failed Rows' : 'Coba Ulang Baris Gagal' }
+      );
+      if (wantsRetry) {
+        await runBulkDatasetRows(runPayload, activeDataset, failedRows.map(r => r.row));
+      }
+    } else if (!cancelledEarly) {
+      announce(isEn ? `Bulk data entry finished: ${successCount}/${targetCount} row(s) passed` : `Bulk data entry selesai: ${successCount}/${targetCount} baris sukses`);
+    }
+  }
+
   btnRunSuite.addEventListener('click', async event => {
     if (currentState.isRecording) {
       return showBentoAlert('Perhatian', 'Hentikan proses perekaman terlebih dahulu sebelum menjalankan tes.', '⚠️');
     }
+    if (bulkRunActive) return; // a bulk run owns the Stop button while active
 
     const activeTab = await getActiveTab();
     if (!activeTab?.id) return showBentoAlert('Perhatian', 'Buka tab website terlebih dahulu untuk menjalankan tes.', '⚠️');
@@ -1277,16 +1456,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     const runPayload = { tabId: activeTab.id, delay, stopOnError: isPressed(stopOnErrorCheck), autoRetryCount };
     const activeDataset = (currentState.datasets || []).find(dataset => dataset.id === currentState.activeDatasetId);
     if (event.altKey && activeDataset?.rows?.length) {
-      const originalRow = currentState.activeDatasetRow || 0;
-      for (let row = 0; row < activeDataset.rows.length; row++) {
-        await sendRuntimeMessage('SET_ACTIVE_DATASET', { id: activeDataset.id, row });
-        const result = await sendRuntimeMessage('RUN_TEST_SUITE', runPayload);
-        if (result?.status !== 'SUCCESS' || result.result?.failedSteps) break;
-      }
-      await sendRuntimeMessage('SET_ACTIVE_DATASET', { id: activeDataset.id, row: originalRow });
+      await runBulkDatasetRows(runPayload, activeDataset);
     } else {
       chrome.runtime.sendMessage({ action: 'RUN_TEST_SUITE', payload: runPayload });
     }
+  });
+
+  // Discoverable equivalent of Alt+click on Run Suite - the primary path for
+  // bulk data entry (Alt+click stays as a muscle-memory shortcut).
+  btnRunAllRows?.addEventListener('click', async () => {
+    const isEn = currentAppLanguage === 'en';
+    if (currentState.isRecording) {
+      return showBentoAlert(isEn ? 'Attention' : 'Perhatian', isEn ? 'Stop recording first before running the test.' : 'Hentikan proses perekaman terlebih dahulu sebelum menjalankan tes.', '⚠️');
+    }
+    if (bulkRunActive) return;
+    const activeDataset = (currentState.datasets || []).find(dataset => dataset.id === currentState.activeDatasetId);
+    if (!activeDataset?.rows?.length) return showBentoAlert(isEn ? 'No Dataset' : 'Tidak Ada Dataset', isEn ? 'Select or import a dataset that has rows first.' : 'Pilih atau import dataset yang punya baris data terlebih dahulu.', 'ℹ️');
+    const activeTab = await getActiveTab();
+    if (!activeTab?.id) return showBentoAlert(isEn ? 'Attention' : 'Perhatian', isEn ? 'Open a website tab first to run the test.' : 'Buka tab website terlebih dahulu untuk menjalankan tes.', '⚠️');
+    if (!/^https?:/i.test(activeTab.url || '')) {
+      return showBentoAlert(isEn ? 'Unsupported Page' : 'Halaman Tidak Didukung', isEn ? 'You cannot run tests on a built-in Chrome page. Open a regular (HTTP/HTTPS) website first.' : 'Anda tidak bisa menjalankan tes pada halaman bawaan Chrome. Silakan buka website biasa (HTTP/HTTPS) terlebih dahulu.', '⚠️');
+    }
+    if (!getActiveSteps().length) return showBentoAlert(isEn ? 'Empty Project' : 'Proyek Kosong', isEn ? 'This project has no test steps yet.' : 'Belum ada langkah tes pada proyek aktif ini.', 'ℹ️');
+    const confirmed = await showBentoConfirm(
+      isEn ? 'Run All Dataset Rows' : 'Jalankan Semua Baris Dataset',
+      isEn
+        ? `The active suite will run repeatedly for ${activeDataset.rows.length} row(s) of dataset "${activeDataset.name}" on the current tab. Make sure the test steps already include submit + reopening the form between rows. Continue?`
+        : `Suite aktif akan dijalankan berulang untuk ${activeDataset.rows.length} baris dataset "${activeDataset.name}" pada tab yang sedang aktif. Pastikan langkah tes sudah mencakup submit + membuka ulang form di antar baris. Lanjutkan?`,
+      { icon: '▶️', confirmText: isEn ? 'Yes, Run' : 'Ya, Jalankan' }
+    );
+    if (!confirmed) return;
+    const delay = parseInt(stepDelayInput.value) || 500;
+    const autoRetryCount = parseInt(document.getElementById('autoRetrySelect')?.value || '2');
+    const runPayload = { tabId: activeTab.id, delay, stopOnError: isPressed(stopOnErrorCheck), autoRetryCount };
+    await runBulkDatasetRows(runPayload, activeDataset);
   });
 
   btnClearSteps.addEventListener('click', async () => {
@@ -1406,10 +1609,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const requirementIds = [...new Set(manualRequirementIds.value.split(',').map(value => value.trim()).filter(Boolean))];
     const risk = manualRisk.value;
 
-    const noSelectorActions = ['wait', 'assert_url', 'assert_screenshot', 'assert_no_console_errors', 'assert_a11y', 'assert_performance', 'clear_mocks', 'use_flow', 'wait_for_url_change', 'wait_for_network_idle'];
+    const noSelectorActions = ['wait', 'press', 'go_back', 'go_forward', 'assert_url', 'assert_screenshot', 'assert_no_console_errors', 'assert_a11y', 'assert_performance', 'clear_mocks', 'use_flow', 'wait_for_url_change', 'wait_for_network_idle'];
     if (!noSelectorActions.includes(action) && !selector) return showBentoAlert('Input Kurang', 'Target CSS Selector wajib diisi.', '⚠️');
 
-    const desc = action.startsWith('wait') && !selector ? `${action}: ${value || '1000'}ms` : `${action.toUpperCase()} → ${selector}`;
+    const desc = action.startsWith('wait') && !selector ? `${action}: ${value || '1000'}ms` : !selector ? action.toUpperCase() : `${action.toUpperCase()} → ${selector}`;
     const existing = editingStepIndex === null ? null : getActiveSteps()[editingStepIndex];
     const newStep = { ...existing, action, selector, value, description: desc, notes, group, timeout, requirementIds, risk, enabled: existing?.enabled !== false, timestamp: existing?.timestamp || new Date().toISOString() };
 
@@ -1619,11 +1822,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // A <select> with one <option> per row falls apart once a dataset has more
+  // than a couple hundred rows (thousand-row Excel/CSV imports would freeze
+  // the dropdown with that many DOM nodes, and it stops being a usable list
+  // anyway). Above that threshold, collapse to a single "pick this dataset"
+  // entry starting at row 0 - the new "Jalankan Semua Baris Dataset" button
+  // is the intended way to actually work through every row, not the picker.
+  const MAX_PER_ROW_OPTIONS = 200;
   function renderDatasetSelector() {
     if (!datasetSelector) return;
     datasetSelector.innerHTML = '<option value="">Tanpa dataset</option>';
     (currentState.datasets || []).forEach(dataset => {
-      (dataset.rows || []).forEach((row, index) => {
+      const rows = dataset.rows || [];
+      if (rows.length > MAX_PER_ROW_OPTIONS) {
+        const option = document.createElement('option');
+        option.value = `${dataset.id}::0`;
+        option.textContent = `${dataset.name} · ${rows.length} baris`;
+        option.selected = dataset.id === currentState.activeDatasetId;
+        datasetSelector.appendChild(option);
+        return;
+      }
+      rows.forEach((row, index) => {
         const option = document.createElement('option');
         option.value = `${dataset.id}::${index}`;
         option.textContent = `${dataset.name} · ${index + 1}`;
@@ -1631,6 +1850,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         datasetSelector.appendChild(option);
       });
     });
+    const activeDataset = (currentState.datasets || []).find(dataset => dataset.id === currentState.activeDatasetId);
+    if (btnRunAllRows) btnRunAllRows.classList.toggle('hidden', !activeDataset?.rows?.length);
   }
 
   function formatSelectorDisplay(sel) {

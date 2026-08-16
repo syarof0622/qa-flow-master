@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
-import path from 'node:path';
 import { ACTION_NAMES } from '../../runner/lib/action-registry.mjs';
 import { validateSuiteDocument } from '../../runner/lib/suite-loader.mjs';
 
@@ -14,7 +13,10 @@ const readSidepanel = async () => {
   const parts = [await readFile(new URL('sidepanel.js', root), 'utf8')];
   const modDir = new URL('../../sidepanel/', import.meta.url);
   const files = (await readdir(modDir)).filter(f => f.endsWith('.js')).sort();
-  for (const f of files) parts.push(await readFile(path.join(modDir.pathname, f), 'utf8'));
+  // Resolve each filename against the directory URL (not path.join on
+  // modDir.pathname) - on Windows a URL pathname looks like "/C:/Users/...",
+  // and path.join mangles that leading-slash-plus-drive-letter form.
+  for (const f of files) parts.push(await readFile(new URL(f, modDir), 'utf8'));
   return parts.join('\n');
 };
 

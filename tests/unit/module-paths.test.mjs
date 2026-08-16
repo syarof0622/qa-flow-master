@@ -50,6 +50,15 @@ test('background.js importScripts targets all exist', async () => {
   }
 });
 
+test('content script injection loads shared/dom-elements.js before content.js', async () => {
+  const injection = await read('background/injection.js');
+  const filesMatch = injection.match(/files:\s*\[([^\]]*)\]/);
+  assert.ok(filesMatch, 'expected a files array in background/injection.js');
+  const files = [...filesMatch[1].matchAll(/'([^']+)'/g)].map(m => m[1]);
+  assert.ok(files.includes('shared/dom-elements.js'), 'shared/dom-elements.js must be injected');
+  assert.ok(files.indexOf('shared/dom-elements.js') < files.indexOf('content.js'), 'shared/dom-elements.js must load before content.js');
+});
+
 test('all <script> and dynamic imports use the shared/ folder at the correct depth', async () => {
   // The AI client lives at shared/ai-client.js. From sidepanel/qa-copilot.js the
   // import MUST be ../shared/... (regression guard for the broken ./shared path).

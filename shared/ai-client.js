@@ -96,7 +96,7 @@ export class AIClient {
       },
       contents,
       generationConfig: {
-        maxOutputTokens: 4096
+        maxOutputTokens: 8192
       }
     };
 
@@ -164,7 +164,7 @@ export class AIClient {
 
     const payload = {
       model: selectedModel,
-      max_tokens: 2048,
+      max_tokens: 4096,
       system: systemPrompt,
       messages
     };
@@ -227,7 +227,7 @@ export class AIClient {
 
     const payload = {
       model: selectedModel,
-      max_tokens: 2048,
+      max_tokens: 4096,
       messages
     };
 

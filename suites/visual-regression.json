@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 2,
+  "environment": { "name": "Public demo", "baseUrl": "https://example.com", "variables": {} },
+  "dataset": { "name": "Default", "rows": [{}] },
+  "suite": {
+    "name": "Visual Regression - Screenshot Baseline",
+    "description": "Demonstrates assert_screenshot against the simplest possible stable page (a single static paragraph, no images/webfonts). NOTE: Playwright names baseline snapshots per-OS (e.g. '...-win32.png'), so a baseline generated on Windows is never found/used on a Linux CI runner and vice versa - this suite is validated in CI but intentionally NOT executed there; run it locally with `npm run qa:run -- suites/visual-regression.json` (add QA_UPDATE_SNAPSHOTS=true once to (re)generate your own OS's baseline first).",
+    "owner": "QA Automation",
+    "priority": "P3",
+    "tags": ["visual", "screenshot"],
+    "startUrl": "{{baseUrl}}",
+    "beforeEach": [],
+    "steps": [
+      {
+        "id": "assert-homepage-screenshot",
+        "action": "assert_screenshot",
+        "selector": "",
+        "value": "",
+        "description": "Tampilan halaman sesuai baseline visual (toleransi 5%)",
+        "enabled": true,
+        "timeout": 15000,
+        "maxDiffPixelRatio": 0.05,
+        "fullPage": true
+      }
+    ],
+    "afterEach": []
+  }
+}

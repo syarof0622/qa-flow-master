@@ -90,7 +90,7 @@ async function ensureMonitorInjected(tabId, includeBridge = false, includeMonito
   if (bridgeNeeded) {
     await executeScriptImmediately({
       target: { tabId, allFrames: true },
-      files: ['data-generator.js', 'recorder-engine.js', 'content.js'],
+      files: ['data-generator.js', 'shared/dom-elements.js', 'recorder-engine.js', 'content.js'],
       world: 'ISOLATED'
     });
   }

@@ -12,7 +12,7 @@ test('extension boots and core authoring UI is available', async () => {
     const extensionId = new URL(worker.url()).host;
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/sidepanel.html`);
-    await page.getByText('PRO v4.3').waitFor();
+    await page.getByText('PRO v4.4').waitFor();
     assert.equal(await page.locator('html').getAttribute('lang'), 'id');
     await page.locator('#btnLanguageToggle').click();
     await page.getByText('Record', { exact: true }).waitFor();
@@ -294,7 +294,7 @@ test('ai copilot generates and renders steps from a mocked provider response', a
     const extensionId = new URL(worker.url()).host;
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/sidepanel.html`);
-    await page.getByText('PRO v4.3').waitFor();
+    await page.getByText('PRO v4.4').waitFor();
 
     // Stub the AI key (real key never needed) and mock the provider fetch so the
     // send flow is fully exercised in CI without hitting a live AI API.
@@ -321,8 +321,69 @@ test('ai copilot generates and renders steps from a mocked provider response', a
     assert.equal(await page.locator('.copilot-step-item').count(), 2);
     assert.equal(await page.locator('.copilot-action-btn').count(), 3);
     const btnTexts = await page.locator('.copilot-action-btn span').allInnerTexts();
-    assert.deepEqual(btnTexts.sort(), ['Jalankan Saja', 'Simpan & Jalankan', 'Simpan ke Steps'].sort());
+    assert.deepEqual(btnTexts.sort(), ['Jalankan', 'Simpan & Jalankan', 'Simpan'].sort());
     // Send button must re-enable after generation.
+    assert.equal(await page.locator('#btnSendCopilot').isEnabled(), true);
+  } finally { await context.close(); }
+});
+
+test('plan mode discusses first and only generates steps after explicit confirmation', async () => {
+  const extensionPath = path.resolve('.');
+  const context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+  try {
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const page = await context.newPage();
+    await page.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    await page.getByText('PRO v4.4').waitFor();
+
+    await page.evaluate(() => chrome.storage.local.set({
+      qa_ai_settings: { provider: 'gemini', model: 'gemini-2.0-flash', apiKey: 'TEST_KEY' }
+    }));
+    // Stateful mock: first turn (the planning discussion) returns pure prose
+    // with no JSON array; only the second turn (after confirmation) returns
+    // the actual step JSON - exactly mirroring what Plan Mode is meant to gate.
+    await page.evaluate(() => {
+      let calls = 0;
+      window.fetch = async (url) => {
+        if (!String(url).includes('generativelanguage')) return { ok: false, status: 404, statusText: 'nf', json: async () => ({}) };
+        calls += 1;
+        const reply = calls === 1
+          ? 'Saya paham Anda ingin menguji alur login.\n\n**Rencana:**\n1. Buka halaman login\n2. Isi username dan password valid\n3. Klik tombol login\n\nLanjutkan dengan rencana ini, atau ada yang perlu disesuaikan?'
+          : 'Berikut skenario ujinya:\n[{"action":"click","selector":"#login","description":"Klik login"},{"action":"fill","selector":"input[type=password]","value":"secret","description":"Isi password"}]';
+        return { ok: true, status: 200, statusText: 'OK', json: async () => ({ candidates: [{ content: { parts: [{ text: reply }] } }] }) };
+      };
+    });
+
+    await page.locator('#tab-btn-copilot').click();
+    // The checkbox itself is visually hidden by the custom toggle-switch CSS
+    // (a sibling span renders the visible track/thumb) - same reason the
+    // agent-mode tests set chrome.storage.local directly instead of clicking
+    // the input. window.QAFlow.isPlanModeEnabled reads this same key fresh
+    // on every send, so this is equivalent to a real toggle flip.
+    await page.evaluate(() => chrome.storage.local.set({ qa_plan_mode_settings: { enabled: true } }));
+
+    // Turn 1: request a test case with Plan Mode on - must get a PLAN, not a step card.
+    await page.locator('#copilotInput').fill('Buatkan test case login');
+    await page.locator('#btnSendCopilot').click();
+    await page.getByText('Lanjutkan dengan rencana ini').waitFor({ timeout: 15000 });
+    assert.equal(await page.locator('.copilot-action-group').count(), 0, 'Plan turn must not render a step card');
+    assert.equal(await page.locator('#btnSendCopilot').isEnabled(), true);
+    // The pending plan must be persisted so a later reload/session still knows
+    // it is awaiting confirmation, not silently treated as a finished answer.
+    const storedPending = await page.evaluate(() => new Promise(resolve => chrome.storage.local.get('qa_copilot_threads', res => {
+      const threads = res.qa_copilot_threads || [];
+      resolve(threads[0]?.messages?.at(-1)?.planPending === true);
+    })));
+    assert.equal(storedPending, true);
+
+    // Turn 2: confirm the plan - NOW it must actually generate the test case.
+    await page.locator('#copilotInput').fill('Ya, lanjutkan');
+    await page.locator('#btnSendCopilot').click();
+    await page.locator('.copilot-action-group').waitFor({ timeout: 15000 });
+    await page.getByText('2 Langkah Tes Di-generate').waitFor();
+    assert.equal(await page.locator('.copilot-step-item').count(), 2);
     assert.equal(await page.locator('#btnSendCopilot').isEnabled(), true);
   } finally { await context.close(); }
 });
@@ -350,6 +411,13 @@ test('ai sharing agent drives the live page and produces steps', async () => {
     const extensionId = new URL(worker.url()).host;
     const sidepanel = await context.newPage();
     await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    // The sidepanel's own async init (settings/threads fetch) attaches the tab
+    // click listeners after the page's 'load' event fires, not before it -
+    // clicking a tab immediately after goto() races that init and can silently
+    // no-op (the click lands before any listener exists). Wait for a rendered
+    // marker that only appears once init has actually completed, matching the
+    // pattern the "ai copilot generates..." test already uses below.
+    await sidepanel.getByText('PRO v4.4').waitFor();
     const target = await context.newPage();
     await target.goto(baseUrl + '/');
     await target.bringToFront();
@@ -390,9 +458,18 @@ test('ai sharing agent drives the live page and produces steps', async () => {
     await target.waitForURL(/\/login$/, { timeout: 10000 });
     await target.locator('#email').waitFor({ state: 'visible', timeout: 8000 });
     assert.equal(await sidepanel.locator('#btnSendCopilot').isEnabled(), true);
-    // The agent's activity log must be visible in the chat (what it did on-page).
-    await sidepanel.locator('.agent-activity').waitFor();
-    assert.match(await sidepanel.locator('.agent-activity').innerText(), /click|#login-link/);
+    // The agent's activity log is intentionally not rendered in the chat UI
+    // (appendAgentActivity's call site is commented out - "Di-disable agar
+    // tidak muncul di chat") but it must still be captured on the stored
+    // thread message, so it survives reloads and stays available for support.
+    const storedActivity = await sidepanel.evaluate(() => new Promise(resolve => {
+      chrome.storage.local.get('qa_copilot_threads', res => {
+        const threads = res.qa_copilot_threads || [];
+        const lastMsg = threads[0]?.messages?.at(-1);
+        resolve(lastMsg?.activity || null);
+      });
+    }));
+    assert.ok(Array.isArray(storedActivity) && storedActivity.some(h => /click|#login-link/.test(String(h))), 'agent activity history must be captured on the stored message');
     // Cleanup: disable agent mode for other tests.
     await sidepanel.evaluate(() => chrome.storage.local.set({ qa_agent_settings: { enabled: false } }));
   } finally {
@@ -419,6 +496,10 @@ test('ai sharing agent asks confirmation before destructive clicks and skips on 
     const extensionId = new URL(worker.url()).host;
     const sidepanel = await context.newPage();
     await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    // See the comment in the test above: wait for the app to actually finish
+    // its async init before clicking any tab, or the click can race a
+    // not-yet-attached listener and silently no-op.
+    await sidepanel.getByText('PRO v4.4').waitFor();
     const target = await context.newPage();
     await target.goto(baseUrl + '/');
     await target.bringToFront();
@@ -446,7 +527,6 @@ test('ai sharing agent asks confirmation before destructive clicks and skips on 
       document.getElementById('copilotInput').value = 'Buatkan test case';
       document.getElementById('btnSendCopilot').click();
     });
-
     // The destructive click must trigger the confirmation modal.
     await sidepanel.locator('#bentoModalConfirmBtn').waitFor({ timeout: 25000 });
     assert.match(await sidepanel.locator('#bentoModalMessage').innerText(), /Hapus Akun/);
@@ -456,7 +536,17 @@ test('ai sharing agent asks confirmation before destructive clicks and skips on 
     // Agent finishes with the step card and records the skipped action.
     await sidepanel.locator('.copilot-action-group').waitFor({ timeout: 25000 });
     await sidepanel.getByText('2 Langkah Tes Di-generate').waitFor();
-    assert.match(await sidepanel.locator('.agent-activity').innerText(), /dilewati/);
+    // The activity log is intentionally not rendered in the chat UI (see the
+    // comment in the test above) but must still be captured on the stored
+    // thread message.
+    const storedActivity = await sidepanel.evaluate(() => new Promise(resolve => {
+      chrome.storage.local.get('qa_copilot_threads', res => {
+        const threads = res.qa_copilot_threads || [];
+        const lastMsg = threads[0]?.messages?.at(-1);
+        resolve(lastMsg?.activity || null);
+      });
+    }));
+    assert.ok(Array.isArray(storedActivity) && storedActivity.some(h => /dilewati/.test(String(h))), 'skip must be captured on the stored message');
     // The destructive button must NOT have been clicked.
     const clicked = await target.evaluate(() => window.__deleteClicked === true);
     assert.equal(clicked, false, 'Agent must not click a destructive element after user denial');
@@ -483,6 +573,10 @@ test('ai sharing agent can be cancelled from the chat mid-run', async () => {
     const extensionId = new URL(worker.url()).host;
     const sidepanel = await context.newPage();
     await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    // See the comment in the earlier agent tests: wait for the app to finish
+    // its async init before clicking any tab, or the click can race a
+    // not-yet-attached listener and silently no-op.
+    await sidepanel.getByText('PRO v4.4').waitFor();
     const target = await context.newPage();
     await target.goto(baseUrl + '/');
     await target.bringToFront();
@@ -510,7 +604,6 @@ test('ai sharing agent can be cancelled from the chat mid-run', async () => {
       document.getElementById('copilotInput').value = 'Buatkan test case';
       document.getElementById('btnSendCopilot').click();
     });
-
     // Cancel button must appear while the agent runs.
     await sidepanel.locator('.copilot-cancel-btn').waitFor({ timeout: 15000 });
     await sidepanel.locator('.copilot-cancel-btn').click();
@@ -576,6 +669,320 @@ test('authoring steps and running a suite completes with passing results', async
     assert.equal(await target.locator('#result').innerText(), 'Saved: Budi');
     // No failure banner.
     assert.equal(await sidepanel.locator('#executionBanner.is-failed').count(), 0);
+  } finally {
+    await context?.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test('go_back action navigates using real chrome.tabs history, not a page-JS call', async () => {
+  const server = createServer((request, response) => {
+    if (request.url === '/away-page') {
+      response.writeHead(200, { 'content-type': 'text/html' });
+      response.end('<!doctype html><title>Away</title><h1>Away Page</h1>');
+      return;
+    }
+    response.writeHead(200, { 'content-type': 'text/html' });
+    response.end('<!doctype html><title>Start</title><a id="next-link" href="/away-page">Go</a>');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const extensionPath = path.resolve('.');
+  let context;
+  try {
+    context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    const target = await context.newPage();
+    await target.goto(baseUrl + '/start-page');
+    await target.bringToFront();
+    const targetTabId = await sidepanel.evaluate(async url => (await chrome.tabs.query({})).find(item => item.url === url)?.id, baseUrl + '/start-page');
+
+    // Author: navigate away, go back, then verify the URL really is back.
+    const authored = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'UPDATE_STEPS',
+      payload: { steps: [
+        { action: 'click', selector: '#next-link', description: 'Klik ke halaman lain' },
+        { action: 'go_back', description: 'Kembali ke halaman sebelumnya' },
+        { action: 'assert_url', value: '/start-page', description: 'Verifikasi kembali ke halaman awal' }
+      ] }
+    }, resolve)));
+    assert.equal(authored.status, 'SUCCESS');
+
+    const run = await sidepanel.evaluate(tabId => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'RUN_TEST_SUITE',
+      payload: { tabId, delay: 200, stopOnError: true, autoRetryCount: 0, scope: {} }
+    }, resolve)), targetTabId);
+    assert.equal(run.status, 'SUCCESS');
+
+    await sidepanel.waitForFunction(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, response => resolve(['COMPLETED', 'FAILED'].includes(response?.data?.executionResults?.status)))), null, { timeout: 20000 });
+    const results = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, response => resolve(response?.data?.executionResults))));
+    assert.equal(results.status, 'COMPLETED');
+    assert.equal(results.totalSteps, 3);
+    assert.equal(results.passedSteps, 3);
+    assert.equal(results.failedSteps, 0);
+    assert.equal(await sidepanel.locator('#executionBanner.is-failed').count(), 0);
+    // Real browser tab navigation must have actually occurred (not a no-op).
+    assert.match(target.url(), /\/start-page$/);
+  } finally {
+    await context?.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test('bulk data-entry runs every dataset row, keeps going after a row fails, and reports live progress', async () => {
+  const server = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'text/html' });
+    response.end('<!doctype html><title>Bulk Fixture</title><input id="name">' +
+      '<button id="save" type="button" onclick="document.getElementById(\'result\').textContent=\'Saved: \'+document.getElementById(\'name\').value">Save</button>' +
+      '<div id="result"></div>' +
+      '<button id="reset" type="button" onclick="document.getElementById(\'name\').value=\'\';document.getElementById(\'result\').textContent=\'\'">Isi Lagi</button>');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const extensionPath = path.resolve('.');
+  let context;
+  try {
+    context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    await sidepanel.getByText('PRO v4.4').waitFor();
+    const target = await context.newPage();
+    await target.goto(baseUrl + '/');
+    await target.bringToFront();
+
+    // Author a fill -> submit -> verify -> reopen-form flow using dataset placeholders.
+    const authored = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'UPDATE_STEPS',
+      payload: { steps: [
+        { action: 'fill', selector: '#name', value: '{{name}}', description: 'Isi nama' },
+        { action: 'click', selector: '#save', description: 'Klik simpan' },
+        { action: 'assert_text', selector: '#result', value: '{{expected}}', description: 'Verifikasi hasil tersimpan' },
+        { action: 'click', selector: '#reset', description: 'Buka form lagi untuk baris berikutnya' }
+      ] }
+    }, resolve)));
+    assert.equal(authored.status, 'SUCCESS');
+
+    // 3-row dataset - row 2 is deliberately given a WRONG expectation so the
+    // bulk loop is forced to record a failure and must keep going anyway
+    // instead of aborting the whole batch (the old Alt-click behavior).
+    const saved = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'SAVE_DATASET',
+      payload: { dataset: { name: 'Bulk Test Data', rows: [
+        { name: 'Baris1', expected: 'Saved: Baris1' },
+        { name: 'Baris2', expected: 'Saved: SALAH' },
+        { name: 'Baris3', expected: 'Saved: Baris3' }
+      ] } }
+    }, resolve)));
+    assert.equal(saved.status, 'SUCCESS');
+
+    // The sidepanel tab is backgrounded (target.bringToFront() above is what
+    // keeps getActiveTab() resolving to the FIXTURE page, not the sidepanel,
+    // when the button's click handler runs) - Chromium does not promptly
+    // recompute layout for a backgrounded page, so Playwright's own
+    // visibility-based waits/clicks (locator.waitFor, locator.click,
+    // locator.innerText) are unreliable here even once the state/class is
+    // genuinely correct. Poll plain JS predicates and dispatch clicks via
+    // evaluate() instead, exactly like the AI Agent tests above do for the
+    // same reason - never bring the sidepanel to front, or getActiveTab()
+    // would pick it up instead of the fixture page.
+    await sidepanel.waitForFunction(() => !document.getElementById('btnRunAllRows')?.classList.contains('hidden'), null, { timeout: 10000 });
+
+    await sidepanel.evaluate(() => document.getElementById('btnRunAllRows').click());
+    await sidepanel.waitForFunction(() => !document.getElementById('bentoModalOverlay')?.classList.contains('hidden'), null, { timeout: 10000 });
+    const confirmMessage = await sidepanel.evaluate(() => document.getElementById('bentoModalMessage')?.textContent || '');
+    assert.match(confirmMessage, /3 baris dataset/);
+    await sidepanel.evaluate(() => document.getElementById('bentoModalConfirmBtn').click());
+
+    // Live progress banner must show row-level counters while the batch runs.
+    await sidepanel.waitForFunction(() => /Baris \d\/3/.test(document.getElementById('bannerDetail')?.textContent || ''), null, { timeout: 10000 });
+
+    // Final summary alert: must report the batch kept going past row 2's
+    // failure and processed all 3 rows, calling out which row failed.
+    await sidepanel.waitForFunction(() => /baris gagal/.test(document.getElementById('bentoModalMessage')?.textContent || ''), null, { timeout: 20000 });
+    const summaryText = await sidepanel.evaluate(() => document.getElementById('bentoModalMessage')?.textContent || '');
+    assert.match(summaryText, /2 baris sukses, 1 baris gagal dari 3 diproses/);
+    assert.match(summaryText, /Baris 2/);
+    // The summary is now a confirm dialog offering "retry failed rows only" -
+    // #bentoModalConfirmBtn means "yes, retry" (which would kick off a SECOND
+    // bulk run for row 2 alone). Dismiss via Cancel here to verify the plain
+    // finish path; the retry flow itself is covered by a dedicated test below.
+    await sidepanel.evaluate(() => document.getElementById('bentoModalCancelBtn').click());
+
+    // The button must be usable again afterwards (not stuck disabled), and the
+    // original active dataset row must have been restored.
+    await sidepanel.waitForFunction(() => document.getElementById('btnRunAllRows')?.disabled === false, null, { timeout: 10000 });
+    // No resume checkpoint should linger after a batch that ran to completion.
+    const checkpointAfterFinish = await sidepanel.evaluate(() => new Promise(resolve => chrome.storage.local.get('qa_bulk_run_checkpoint', res => resolve(res?.qa_bulk_run_checkpoint || null))));
+    assert.equal(checkpointAfterFinish, null);
+  } finally {
+    await context?.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test('bulk data-entry retry-failed-rows re-runs only the specific rows that failed', async () => {
+  const server = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'text/html' });
+    response.end('<!doctype html><title>Retry Fixture</title><input id="name">' +
+      '<button id="save" type="button" onclick="document.getElementById(\'result\').textContent=\'Saved: \'+document.getElementById(\'name\').value">Save</button>' +
+      '<div id="result"></div>' +
+      '<button id="reset" type="button" onclick="document.getElementById(\'name\').value=\'\';document.getElementById(\'result\').textContent=\'\'">Isi Lagi</button>');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const extensionPath = path.resolve('.');
+  let context;
+  try {
+    context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    await sidepanel.getByText('PRO v4.4').waitFor();
+    const target = await context.newPage();
+    await target.goto(baseUrl + '/');
+    await target.bringToFront();
+
+    const authored = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'UPDATE_STEPS',
+      payload: { steps: [
+        { action: 'fill', selector: '#name', value: '{{name}}', description: 'Isi nama' },
+        { action: 'click', selector: '#save', description: 'Klik simpan' },
+        { action: 'assert_text', selector: '#result', value: '{{expected}}', description: 'Verifikasi hasil tersimpan' },
+        { action: 'click', selector: '#reset', description: 'Buka form lagi' }
+      ] }
+    }, resolve)));
+    assert.equal(authored.status, 'SUCCESS');
+
+    // Row 2 is deliberately wrong so it fails on the first pass.
+    const saved = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'SAVE_DATASET',
+      payload: { dataset: { name: 'Retry Test Data', rows: [
+        { name: 'Baris1', expected: 'Saved: Baris1' },
+        { name: 'Baris2', expected: 'Saved: SALAH' },
+        { name: 'Baris3', expected: 'Saved: Baris3' }
+      ] } }
+    }, resolve)));
+    assert.equal(saved.status, 'SUCCESS');
+
+    await sidepanel.waitForFunction(() => !document.getElementById('btnRunAllRows')?.classList.contains('hidden'), null, { timeout: 10000 });
+    await sidepanel.evaluate(() => document.getElementById('btnRunAllRows').click());
+    await sidepanel.waitForFunction(() => !document.getElementById('bentoModalOverlay')?.classList.contains('hidden'), null, { timeout: 10000 });
+    await sidepanel.evaluate(() => document.getElementById('bentoModalConfirmBtn').click());
+
+    // First pass finishes with row 2 failed - click "Retry Failed Rows" this time.
+    await sidepanel.waitForFunction(() => /baris gagal/.test(document.getElementById('bentoModalMessage')?.textContent || ''), null, { timeout: 20000 });
+    const firstSummary = await sidepanel.evaluate(() => document.getElementById('bentoModalMessage')?.textContent || '');
+    assert.match(firstSummary, /2 baris sukses, 1 baris gagal dari 3 diproses/);
+    assert.match(await sidepanel.evaluate(() => document.getElementById('bentoModalConfirmBtn')?.textContent || ''), /Coba Ulang|Retry/);
+    await sidepanel.evaluate(() => document.getElementById('bentoModalConfirmBtn').click());
+
+    // The retry pass must show its own distinct "retrying" progress state...
+    await sidepanel.waitForFunction(() => /Mencoba Ulang Baris Gagal|Retrying Failed Rows/.test(document.getElementById('bannerText')?.textContent || ''), null, { timeout: 10000 });
+    // ...and process EXACTLY 1 row (only row 2), not all 3 again - the second
+    // summary must report "dari 1 diproses" and still name row 2 (same wrong
+    // expectation, so it fails again), proving the retry scoped correctly.
+    // Match "dari 1 diproses" specifically (not just /baris gagal/, which the
+    // FIRST summary's still-visible text also contains before this updates).
+    await sidepanel.waitForFunction(() => /dari 1 diproses/.test(document.getElementById('bentoModalMessage')?.textContent || ''), null, { timeout: 20000 });
+    const retrySummary = await sidepanel.evaluate(() => document.getElementById('bentoModalMessage')?.textContent || '');
+    assert.match(retrySummary, /0 baris sukses, 1 baris gagal dari 1 diproses/);
+    assert.match(retrySummary, /Baris 2/);
+    await sidepanel.evaluate(() => document.getElementById('bentoModalCancelBtn').click());
+
+    await sidepanel.waitForFunction(() => document.getElementById('btnRunAllRows')?.disabled === false, null, { timeout: 10000 });
+  } finally {
+    await context?.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test('bulk data-entry resumes an interrupted batch instead of redoing already-completed rows', async () => {
+  const server = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'text/html' });
+    response.end('<!doctype html><title>Resume Fixture</title><input id="name">' +
+      '<button id="save" type="button" onclick="document.getElementById(\'result\').textContent=\'Saved: \'+document.getElementById(\'name\').value">Save</button>' +
+      '<div id="result"></div>' +
+      '<button id="reset" type="button" onclick="document.getElementById(\'name\').value=\'\';document.getElementById(\'result\').textContent=\'\'">Isi Lagi</button>');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const extensionPath = path.resolve('.');
+  let context;
+  try {
+    context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    await sidepanel.getByText('PRO v4.4').waitFor();
+    const target = await context.newPage();
+    await target.goto(baseUrl + '/');
+    await target.bringToFront();
+
+    const authored = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'UPDATE_STEPS',
+      payload: { steps: [
+        { action: 'fill', selector: '#name', value: '{{name}}', description: 'Isi nama' },
+        { action: 'click', selector: '#save', description: 'Klik simpan' },
+        { action: 'assert_text', selector: '#result', value: '{{expected}}', description: 'Verifikasi hasil tersimpan' },
+        { action: 'click', selector: '#reset', description: 'Buka form lagi' }
+      ] }
+    }, resolve)));
+    assert.equal(authored.status, 'SUCCESS');
+
+    // Row 1's CURRENT data would fail if actually re-executed (expects text
+    // that will never appear) - this is the proof that resume genuinely
+    // skips it rather than coincidentally reporting success.
+    const saved = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'SAVE_DATASET',
+      payload: { dataset: { name: 'Resume Test Data', rows: [
+        { name: 'Baris1', expected: 'Saved: THIS_WOULD_FAIL_IF_RERUN' },
+        { name: 'Baris2', expected: 'Saved: Baris2' },
+        { name: 'Baris3', expected: 'Saved: Baris3' }
+      ] } }
+    }, resolve)));
+    assert.equal(saved.status, 'SUCCESS');
+    const datasetId = saved.dataset.id;
+
+    // Simulate an earlier run that was interrupted right after row 1 (index 0)
+    // completed successfully - e.g. the browser crashed or the tab was closed.
+    await sidepanel.evaluate((id) => new Promise(resolve => chrome.storage.local.set({
+      qa_bulk_run_checkpoint: { datasetId: id, rowResults: [{ row: 0, status: 'PASSED', failedSteps: 0, error: null }], savedAt: new Date(0).toISOString() }
+    }, resolve)), datasetId);
+
+    await sidepanel.waitForFunction(() => !document.getElementById('btnRunAllRows')?.classList.contains('hidden'), null, { timeout: 10000 });
+    await sidepanel.evaluate(() => document.getElementById('btnRunAllRows').click());
+    // First confirm: "Run all rows?"
+    await sidepanel.waitForFunction(() => !document.getElementById('bentoModalOverlay')?.classList.contains('hidden'), null, { timeout: 10000 });
+    await sidepanel.evaluate(() => document.getElementById('bentoModalConfirmBtn').click());
+
+    // Second confirm: must be the RESUME prompt, mentioning where it stopped.
+    await sidepanel.waitForFunction(() => /1\/3/.test(document.getElementById('bentoModalMessage')?.textContent || ''), null, { timeout: 10000 });
+    const resumeMessage = await sidepanel.evaluate(() => document.getElementById('bentoModalMessage')?.textContent || '');
+    assert.match(resumeMessage, /Resume Test Data/);
+    await sidepanel.evaluate(() => document.getElementById('bentoModalConfirmBtn').click());
+
+    // Must finish with ALL 3 rows accounted for (1 restored + 2 freshly run)
+    // and ZERO failures - if row 1 had actually been redone with its current
+    // (failing) data, this would show 1 failure instead.
+    await sidepanel.waitForFunction(() => /3\/3.*3.*0/.test(document.getElementById('bannerDetail')?.textContent || ''), null, { timeout: 15000 });
+    const finalDetail = await sidepanel.evaluate(() => document.getElementById('bannerDetail')?.textContent || '');
+    assert.match(finalDetail, /3\/3/);
+    assert.doesNotMatch(finalDetail, /[1-9] gagal/);
+
+    // The checkpoint must be cleared now that the batch is fully complete.
+    const checkpointAfter = await sidepanel.evaluate(() => new Promise(resolve => chrome.storage.local.get('qa_bulk_run_checkpoint', res => resolve(res?.qa_bulk_run_checkpoint || null))));
+    assert.equal(checkpointAfter, null);
   } finally {
     await context?.close();
     await new Promise(resolve => server.close(resolve));

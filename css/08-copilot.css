@@ -78,6 +78,38 @@ body.light-theme .copilot-header-badge {
   border-radius: var(--radius-inner);
 }
 
+.copilot-scroll-bottom-btn {
+  position: absolute;
+  bottom: 110px;
+  right: 20px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.copilot-scroll-bottom-btn:hover {
+  background: var(--bg-input);
+  transform: translateY(-2px) scale(1.05);
+}
+
+.copilot-scroll-bottom-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px) scale(0.9);
+}
+
 body.light-theme .copilot-chat-area {
   background: #f8fafc;
   border-color: #e2e8f0;
@@ -673,22 +705,41 @@ body.light-theme .copilot-step-item {
 .bento-table-wrapper {
   width: 100%;
   overflow-x: auto;
-  margin: 8px 0;
-  border-radius: 4px;
+  margin: 12px 0;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 15%, var(--border-subtle));
+  background: var(--bg-card);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 .bento-chat-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: 11.5px;
 }
 .bento-chat-table th, .bento-chat-table td {
-  border: 1px solid var(--border-subtle);
-  padding: 6px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent-primary) 10%, var(--border-subtle));
+  padding: 10px 12px;
   text-align: left;
+  color: var(--text-main);
+}
+.bento-chat-table tr:last-child td {
+  border-bottom: none;
 }
 .bento-chat-table th {
-  background: var(--bg-input);
-  font-weight: 600;
+  background: color-mix(in srgb, var(--accent-primary) 5%, var(--bg-input));
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+.bento-chat-table tr:nth-child(even) {
+  background: color-mix(in srgb, var(--accent-primary) 2%, transparent);
+}
+.bento-chat-divider {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-primary) 30%, var(--border-subtle)), transparent);
+  margin: 16px 0;
 }
 .bento-chat-blockquote {
   border-left: 3px solid var(--accent-primary);

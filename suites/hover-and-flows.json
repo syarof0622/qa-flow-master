@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "environment": { "name": "Public QA sandbox", "baseUrl": "https://the-internet.herokuapp.com", "variables": {} },
+  "dataset": { "name": "Default", "rows": [{}] },
+  "suite": {
+    "name": "Hover Reveal & Reusable Flow",
+    "description": "Demonstrates hover (verifying a CSS :hover-revealed element actually becomes visible) and use_flow (a reusable step block invoked before the hover checks).",
+    "owner": "QA Automation",
+    "priority": "P2",
+    "tags": ["hover", "flows", "ci"],
+    "startUrl": "{{baseUrl}}/hovers",
+    "beforeEach": [],
+    "steps": [
+      { "id": "page-ready", "action": "use_flow", "selector": "", "value": "pageReadyCheck", "description": "Cek halaman sudah termuat (flow reusable)", "enabled": true, "timeout": 10000 },
+      { "id": "hover-1", "action": "hover", "selector": ".figure:nth-of-type(1)", "value": "", "description": "Arahkan kursor ke avatar 1", "enabled": true, "timeout": 10000 },
+      { "id": "assert-1-visible", "action": "assert_visible", "selector": ".figure:nth-of-type(1) a", "value": "", "description": "Link 'View profile' avatar 1 terlihat setelah hover", "enabled": true, "timeout": 10000 },
+      { "id": "hover-2", "action": "hover", "selector": ".figure:nth-of-type(2)", "value": "", "description": "Arahkan kursor ke avatar 2", "enabled": true, "timeout": 10000 },
+      { "id": "assert-2-visible", "action": "assert_visible", "selector": ".figure:nth-of-type(2) a", "value": "", "description": "Link 'View profile' avatar 2 terlihat setelah hover", "enabled": true, "timeout": 10000 },
+      { "id": "hover-3", "action": "hover", "selector": ".figure:nth-of-type(3)", "value": "", "description": "Arahkan kursor ke avatar 3", "enabled": true, "timeout": 10000 },
+      { "id": "assert-3-visible", "action": "assert_visible", "selector": ".figure:nth-of-type(3) a", "value": "", "description": "Link 'View profile' avatar 3 terlihat setelah hover", "enabled": true, "timeout": 10000 }
+    ],
+    "afterEach": [],
+    "flows": {
+      "pageReadyCheck": [
+        { "id": "flow-heading-visible", "action": "assert_visible", "selector": "h3", "value": "", "description": "Judul halaman 'Hovers' terlihat", "enabled": true, "timeout": 10000 }
+      ]
+    }
+  }
+}

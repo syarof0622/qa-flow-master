@@ -2,6 +2,43 @@
 // QA COPILOT WITH THREAD PERSISTENCE & SUPABASE CLOUD SYNC
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
+  // Shared formatting mandate for every conversational (non-JSON-only) AI
+  // response. The renderer (sidepanel/markdown-parser.js) already supports
+  // GitHub-Flavored Markdown INCLUDING styled alert callouts (> [!NOTE] etc.)
+  // - the recurring problem was the AI never using any of that syntax and
+  // replying as one unbroken wall of plain text. This is injected into every
+  // prompt whose output is rendered as prose (not the JSON-only step prompt).
+  const FORMATTING_RULES = `FORMAT JAWABAN (WAJIB - parser mendukung GitHub-Flavored Markdown penuh, PAKAI semuanya, JANGAN balas dengan satu paragraf teks polos):
+- **Bold** untuk istilah/keputusan/hasil penting (mis. **berhasil login**, **redirect ke /secure**, **DITEMUKAN BUG**).
+- Inline \`code\` untuk SETIAP nilai persis/teknis: password, URL, selector, pesan error, status code, nama field, nama variabel - nilai teknis TIDAK BOLEH ditulis sebagai teks polos.
+- Daftar bernomor (1. 2. 3.) untuk alur/langkah-demi-langkah - JANGAN gabungkan urutan langkah jadi satu kalimat panjang.
+- Blockquote alert untuk catatan penting, PERSIS format ini (baris tersendiri diawali ">"):
+  > [!NOTE] untuk info tambahan yang berguna
+  > [!WARNING] untuk hal yang perlu diwaspadai/keterbatasan (mis. field password tidak bisa dibaca langsung dari browser)
+  > [!IMPORTANT] untuk hal krusial yang wajib diperhatikan user sebelum lanjut
+- Tabel Markdown (\`| kolom | kolom |\`) kalau membandingkan beberapa data terstruktur (mis. hasil per baris dataset, before/after).
+- Judul singkat dengan \`##\`/\`###\` kalau jawaban punya beberapa bagian berbeda.`;
+  // Exposed so ai-agent.js's separate DOMContentLoaded closure can reuse the
+  // exact same rules for its "summary" field instead of duplicating the text.
+  window.QAFlow = window.QAFlow || {};
+  window.QAFlow.formattingRules = FORMATTING_RULES;
+
+  // ---- PLAN MODE toggle ("diskusi dulu sebelum eksekusi") ----
+  const PLAN_MODE_KEY = 'qa_plan_mode_settings';
+  async function getPlanModeEnabled() {
+    const store = await chrome.storage.local.get(PLAN_MODE_KEY).catch(() => ({}));
+    return store?.[PLAN_MODE_KEY]?.enabled === true;
+  }
+  async function setPlanModeEnabled(enabled) {
+    await chrome.storage.local.set({ [PLAN_MODE_KEY]: { enabled: Boolean(enabled) } }).catch(() => {});
+  }
+  window.QAFlow.isPlanModeEnabled = getPlanModeEnabled;
+  const planModeToggle = document.getElementById('planModeToggle');
+  if (planModeToggle) {
+    getPlanModeEnabled().then(enabled => { planModeToggle.checked = enabled; });
+    planModeToggle.addEventListener('change', () => setPlanModeEnabled(planModeToggle.checked));
+  }
+
   const btnSendCopilot = document.getElementById('btnSendCopilot');
   const copilotInput = document.getElementById('copilotInput');
   const copilotChatArea = document.getElementById('copilotChatArea');
@@ -13,6 +50,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   const copilotThreadCurrent = document.getElementById('copilotThreadCurrent');
   const copilotThreadMenu = document.getElementById('copilotThreadMenu');
   const btnNewCopilotThread = document.getElementById('btnNewCopilotThread');
+  const btnScrollToBottom = document.getElementById('btnScrollToBottom');
+
+  if (copilotChatArea && btnScrollToBottom) {
+    copilotChatArea.addEventListener('scroll', () => {
+      const isNearBottom = copilotChatArea.scrollHeight - copilotChatArea.scrollTop - copilotChatArea.clientHeight < 100;
+      if (isNearBottom) {
+        btnScrollToBottom.classList.add('hidden');
+      } else {
+        btnScrollToBottom.classList.remove('hidden');
+      }
+    });
+
+    btnScrollToBottom.addEventListener('click', () => {
+      copilotChatArea.scrollTo({
+        top: copilotChatArea.scrollHeight,
+        behavior: 'smooth'
+      });
+    });
+  }
 
   // This block runs in its own DOMContentLoaded scope, so re-bind the shared
   // block-1 helper (bare references used to throw ReferenceError here).
@@ -69,10 +125,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function escapeHTML(str) {
-    if (!str) return '';
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
+  // escapeHTML comes from the shared pure helpers in sidepanel/render.js (loaded
+  // before this file), so there is a single canonical implementation.
 
   // highlightJSCode and parseMarkdownToHTML have been moved to sidepanel/markdown-parser.js
   // window.copyCopilotCode has also been moved.
@@ -156,15 +210,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     copilotChatArea.innerHTML = '';
     currentThread.messages.forEach(msg => {
-      if (Array.isArray(msg.activity) && msg.activity.length) {
-        // appendAgentActivity(msg.activity); // Di-disable atas permintaan pengguna agar tidak mengotori UI
-      }
       if (msg.steps && Array.isArray(msg.steps) && msg.steps.length > 0) {
-        appendCopilotStepCardMsg(msg.cleanReply || msg.text, msg.steps, false);
+        appendCopilotStepCardMsg(msg.cleanReply || msg.text, msg.steps);
       } else if (msg.sender === 'error') {
-        appendCopilotErrorMsg(msg.text, false);
+        appendCopilotErrorMsg(msg.text);
       } else {
-        appendCopilotMsg(msg.text, msg.sender, false);
+        appendCopilotMsg(msg.text, msg.sender);
       }
     });
     copilotChatArea.scrollTop = copilotChatArea.scrollHeight;
@@ -251,7 +302,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  function appendCopilotMsg(text, sender = 'system', saveToThread = true, isMarkdown = true) {
+  function appendCopilotMsg(text, sender = 'system', isMarkdown = true) {
     const wrapper = document.createElement('div');
     wrapper.className = `copilot-msg ${sender}`;
     const bubble = document.createElement('div');
@@ -263,7 +314,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return wrapper;
   }
 
-  function appendCopilotErrorMsg(errorText, saveToThread = true) {
+  function appendCopilotErrorMsg(errorText) {
     const wrapper = document.createElement('div');
     wrapper.className = 'copilot-msg error';
     const bubble = document.createElement('div');
@@ -297,12 +348,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     copilotChatArea.scrollTop = copilotChatArea.scrollHeight;
   }
 
-  function appendCopilotStepCardMsg(cleanReply, steps, saveToThread = true) {
+  // The AI Agent verifies its own selectors live before handing over a test
+  // case (it drives the page and confirms elements exist). Plain chat-mode
+  // generation never did this - it just guesses selectors from a DOM snapshot
+  // that may already be stale by the time the reply comes back, and the user
+  // only finds out a selector was wrong after clicking "Jalankan". This does a
+  // best-effort live check so the step card can warn about that BEFORE the
+  // user runs anything. Playwright-only selector syntax (e.g. :has-text(),
+  // >>, text=) is not valid native CSS and would throw in querySelectorAll -
+  // those are left unverified (undefined) rather than incorrectly flagged as
+  // broken; only a selector that IS valid CSS and matches zero elements is
+  // marked _selectorFound: false.
+  async function verifySelectorsOnPage(steps, tabId) {
+    if (!tabId || !Array.isArray(steps) || !steps.length) return steps;
+    const selectors = steps.map(step => step?.selector).filter(Boolean);
+    if (!selectors.length) return steps;
+    try {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: (sels) => sels.map(sel => {
+          try { return document.querySelectorAll(sel).length > 0; }
+          catch (e) { return undefined; }
+        }),
+        args: [selectors]
+      });
+      const foundBySelector = results?.[0]?.result;
+      if (!Array.isArray(foundBySelector)) return steps;
+      let i = 0;
+      return steps.map(step => {
+        if (!step?.selector) return step;
+        const found = foundBySelector[i++];
+        return found === undefined ? step : { ...step, _selectorFound: found };
+      });
+    } catch (e) {
+      return steps; // active tab not scriptable (chrome://, Web Store, ...) - skip silently
+    }
+  }
+
+  function appendCopilotStepCardMsg(cleanReply, steps) {
     const activeLang = window.QAI18n?.getLanguage?.() || 'id';
     const isEn = activeLang === 'en';
     const cardHeader = isEn ? `${steps.length} Test Steps Generated:` : `${steps.length} Langkah Tes Di-generate:`;
-    const appendLabel = isEn ? 'Add to Suite' : 'Simpan ke Steps';
-    const runLabel = isEn ? 'Run Only' : 'Jalankan Saja';
+    const appendLabel = isEn ? 'Save' : 'Simpan';
+    const runLabel = isEn ? 'Run' : 'Jalankan';
     const saveRunLabel = isEn ? 'Save & Run' : 'Simpan & Jalankan';
 
     const wrapper = document.createElement('div');
@@ -315,10 +403,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       const btnSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       const listSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>`;
       
+      const unverifiedCount = steps.filter(st => st._selectorFound === false).length;
+      const unverifiedNote = unverifiedCount
+        ? `<div style="font-size:9.5px;color:#f59e0b;margin-bottom:4px;">⚠️ ${unverifiedCount} ${isEn ? (unverifiedCount === 1 ? 'selector was' : 'selectors were') + ' not found on the current page - double-check before running.' : (unverifiedCount === 1 ? 'selector tidak' : 'selector tidak') + ' ditemukan di halaman saat ini - periksa dulu sebelum menjalankan.'}</div>`
+        : '';
       html += `<div class="copilot-step-preview">`;
       html += `<div style="font-weight:700;font-size:10.5px;margin-bottom:4px;color:var(--accent-primary);display:flex;align-items:center;">${listSvg} <span>${escapeHTML(cardHeader)}</span></div>`;
+      html += unverifiedNote;
       steps.forEach((st, idx) => {
-        html += `<div class="copilot-step-item"><span class="copilot-step-badge">${escapeHTML(st.action || 'step')}</span> ${escapeHTML(st.description || st.selector || `Step ${idx+1}`)}</div>`;
+        const warnBadge = st._selectorFound === false ? ` <span title="${escapeHTML(isEn ? 'Selector not found on the current page' : 'Selector tidak ditemukan di halaman saat ini')}" style="color:#f59e0b;">⚠️</span>` : '';
+        html += `<div class="copilot-step-item"><span class="copilot-step-badge">${escapeHTML(st.action || 'step')}</span> ${escapeHTML(st.description || st.selector || `Step ${idx+1}`)}${warnBadge}</div>`;
       });
       html += `</div>`;
       
@@ -600,6 +694,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // never redirect the AI response into another thread.
     const targetThreadId = currentThread.id;
 
+    // Plan Mode: was the LAST assistant message (before this new user reply)
+    // a proposed plan still awaiting confirmation? Captured BEFORE the new
+    // user message is pushed below, since that push would otherwise become
+    // "the last message" and hide this. Only a clear confirmation phrase (not
+    // just any reply - the user might be asking for revisions instead)
+    // actually triggers execution; anything else re-enters planning/discussion.
+    const priorLastMessage = currentThread.messages[currentThread.messages.length - 1];
+    const wasPlanPending = priorLastMessage?.sender === 'system' && priorLastMessage?.planPending === true;
+    const isPlanConfirmation = wasPlanPending && /^(ya|iya|yes|y|ok|oke|okay|siap|betul|benar|setuju|gas|silakan)\b|^(lanjut(kan)?|jalankan|eksekusi(kan)?|proceed|go ahead|execute|confirm(ed)?)\b/i.test(displayUserText.trim());
+
     // Lock thread controls while AI is generating to prevent mid-flight switching.
     copilotThreadTrigger?.setAttribute('disabled', 'disabled');
     closeThreadMenu();
@@ -617,7 +721,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.QAFlow.sendRuntimeMessage('SAVE_COPILOT_THREAD', { thread: currentThread });
     renderThreadSelector();
 
-    appendCopilotMsg(displayUserText, 'user', false);
+    appendCopilotMsg(displayUserText, 'user');
     copilotInput.value = '';
     btnSendCopilot.disabled = true;
 
@@ -628,10 +732,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!settings.apiKey) {
         throw new Error('API Key belum diatur. Silakan klik tombol di bawah untuk memasukkan API Key.');
       }
+      // Imported once and reused by every branch below (Plan Mode discussion,
+      // the normal chat/expert reply, and the JSON step-generation path).
+      const { AIClient } = await import('../shared/ai-client.js');
+      const ai = new AIClient(settings.provider, settings.apiKey, settings.model);
 
       function detectUserIntent(userText = '') {
         const text = String(userText).toLowerCase().trim();
-        if (/(negative test|boundary value|page\.route|mock api|mocking|laporan bug|bug report|jira issue|self-healing|heal selector)/i.test(text)) return 'EXPERT_TASK';
+        // Negative test / boundary value requests are still test-case generation
+        // (they must produce importable JSON steps) - only route genuinely
+        // non-step tasks (bug reports, mocking scripts, selector healing) to the
+        // conversational Expert prompt below.
+        if (/(negative test|boundary value)/i.test(text)) return 'TEST_GENERATION';
+        if (/(page\.route|mock api|mocking|laporan bug|bug report|jira issue|self-healing|heal selector)/i.test(text)) return 'EXPERT_TASK';
         if (/(buatkan|buat|generate|bikin|gen)\s+(test|tes|skenario|assertion|assert|langkah|step)/i.test(text) ||
             /(test|tes)\s+(login|register|form|pendaftaran|checkout|search|flow)/i.test(text) ||
             /^(generate|buat|bikin)\s+/i.test(text)) return 'TEST_GENERATION';
@@ -642,14 +755,84 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const activeLang = window.QAI18n?.getLanguage?.() || 'id';
       const isEn = activeLang === 'en';
-      const userIntent = detectUserIntent(displayUserText);
+      let userIntent = detectUserIntent(displayUserText);
+      // A short confirmation reply ("Ya, lanjutkan") to a pending plan almost
+      // never contains any of detectUserIntent's TEST_GENERATION keywords on
+      // its own (those were all used in the ORIGINAL request already) - without
+      // this override it would misclassify as QA_KNOWLEDGE and the plan would
+      // never actually turn into a runnable test case after being confirmed.
+      if (isPlanConfirmation) userIntent = 'TEST_GENERATION';
+
+      // ---- PLAN MODE (optional) ----
+      // "Diskusi dulu sebelum eksekusi": when enabled, a TEST_GENERATION-style
+      // request does NOT immediately generate step JSON or invoke the live
+      // agent - the AI proposes a plan in prose first and asks the user to
+      // confirm or revise it. Only a clear confirmation reply to a pending
+      // plan (isPlanConfirmation, computed above from the thread's last
+      // message) lets execution actually happen on a later turn.
+      const planModeEnabled = await window.QAFlow.isPlanModeEnabled?.();
+      if (planModeEnabled && userIntent === 'TEST_GENERATION' && !isPlanConfirmation) {
+        const typingHtml = `<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+        thinkingMsgEl = appendCopilotMsg(typingHtml, 'system', false);
+        try {
+          let planHistoryTurns = [];
+          const planThreadObj = copilotThreads.find(t => t.id === targetThreadId);
+          if (planThreadObj && Array.isArray(planThreadObj.messages) && planThreadObj.messages.length > 1) {
+            planHistoryTurns = planThreadObj.messages.slice(0, -1).slice(-10).map(m => ({
+              role: m.sender === 'user' ? 'user' : 'assistant',
+              text: (m.cleanReply || m.text || '').trim()
+            })).filter(h => h.text.length > 0);
+          }
+          const planSystemPrompt = `You are QA Copilot in PLAN MODE - a senior QA engineer discussing a testing task BEFORE touching anything, exactly like a careful human would talk it through with a teammate first.
+
+DO NOT generate a JSON step array. DO NOT say a test case has been created. This turn is PURE DISCUSSION.
+
+WHAT TO DO:
+1. Restate your understanding of the goal in one short line, so the user can correct you if you misread it.
+2. If anything genuinely important is ambiguous or missing (which form/page, what test data to use, happy path vs also negative cases, one row vs a whole dataset), ASK specific clarifying questions - do not guess silently on something that changes the outcome.
+3. Otherwise (or once you have enough to proceed), propose a concrete PLAN: a numbered list of what you intend to do/verify, called out clearly.
+4. ALWAYS end with an explicit question inviting the user to confirm or ask for changes (e.g. "Lanjutkan dengan rencana ini, atau ada yang perlu disesuaikan?").
+${window.QAFlow?.formattingRules || ''}`;
+          const planReply = await ai.sendPrompt(planSystemPrompt, displayUserText, null, [], planHistoryTurns);
+          thinkingMsgEl?.remove();
+          thinkingMsgEl = null;
+          let planThread = copilotThreads.find(t => t.id === targetThreadId);
+          if (planThread) {
+            planThread.messages.push({
+              id: `msg_${Date.now()}`,
+              sender: 'system',
+              text: planReply,
+              cleanReply: planReply,
+              planPending: true,
+              timestamp: new Date().toISOString()
+            });
+            planThread.updatedAt = new Date().toISOString();
+            chrome.storage.local.set({ qa_copilot_threads: copilotThreads, qa_active_copilot_thread_id: activeThreadId });
+            window.QAFlow.sendRuntimeMessage('SYNC_COPILOT_THREADS', { threads: copilotThreads, activeId: activeThreadId });
+            window.QAFlow.sendRuntimeMessage('SAVE_COPILOT_THREAD', { thread: planThread });
+            renderThreadSelector();
+          }
+          appendCopilotMsg(planReply, 'system');
+        } catch (err) {
+          thinkingMsgEl?.remove();
+          thinkingMsgEl = null;
+          showBentoAlert(isEn ? 'Failed to Build Plan' : 'Gagal Membuat Rencana', err.message, '⚠️');
+        } finally {
+          copilotThreadTrigger?.removeAttribute('disabled');
+          if (btnNewCopilotThread) btnNewCopilotThread.disabled = false;
+          if (btnClearCopilot) btnClearCopilot.disabled = false;
+          btnSendCopilot.disabled = false;
+          isAiGenerating = false;
+        }
+        return;
+      }
 
       // ---- AI SHARING AGENT MODE (optional) ----
       // When enabled and user explicitly requests test generation, the AI drives the live page
       const agentMode = await window.QAFlow.isAgentModeEnabled?.();
       if (agentMode && userIntent === 'TEST_GENERATION' && typeof window.QAFlow.runAgentTask === 'function') {
         const agentThinking = isEn ? 'AI Agent is exploring the page & building a test case…' : 'AI Agent sedang menjelajahi halaman & menyusun test case…';
-        thinkingMsgEl = appendCopilotMsg(agentThinking, 'system', false);
+        thinkingMsgEl = appendCopilotMsg(agentThinking, 'system');
         const thinkingBubble = thinkingMsgEl?.querySelector('.msg-bubble');
         if (thinkingBubble) {
           thinkingBubble.innerHTML = `<span class="agent-status">${escapeHTML(agentThinking)}</span>`;
@@ -675,8 +858,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           thinkingMsgEl = null;
         }
 
-        const cleanReply = agentResult?.cleanReply || (isEn ? 'AI agent generated a test scenario for this page:' : 'AI agent berhasil membuat skenario uji untuk halaman ini:');
+        const baseReply = agentResult?.cleanReply || (isEn ? 'AI agent generated a test scenario for this page:' : 'AI agent berhasil membuat skenario uji untuk halaman ini:');
         let agentSteps = agentResult?.steps || [];
+        // Turn structured bug findings into visible, formatted ticket(s) in the
+        // chat itself - not just data returned and forgotten. Each draft is
+        // already Markdown (Jira/GitHub-style), and cleanReply is rendered
+        // through the Markdown parser, so this renders as real formatted text.
+        const agentBugReports = Array.isArray(agentResult?.bugReports) ? agentResult.bugReports : [];
+        const bugSection = agentBugReports.length
+          ? `\n\n---\n\n${isEn ? `## 🐞 ${agentBugReports.length} Bug Report(s) Found` : `## 🐞 ${agentBugReports.length} Laporan Bug Ditemukan`}\n\n${agentBugReports.map(b => b.draft).join('\n\n---\n\n')}`
+          : '';
+        const cleanReply = baseReply + bugSection;
         let currentThread = copilotThreads.find(t => t.id === targetThreadId);
         if (currentThread) {
           currentThread.messages.push({
@@ -685,11 +877,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             text: cleanReply,
             cleanReply,
             steps: agentSteps,
+            bugReports: agentBugReports,
             activity: agentResult?.history,
             timestamp: new Date().toISOString()
           });
           currentThread.updatedAt = new Date().toISOString();
           chrome.storage.local.set({ qa_copilot_threads: copilotThreads, qa_active_copilot_thread_id: activeThreadId });
+          window.QAFlow.sendRuntimeMessage('SYNC_COPILOT_THREADS', { threads: copilotThreads, activeId: activeThreadId });
           window.QAFlow.sendRuntimeMessage('SAVE_COPILOT_THREAD', { thread: currentThread });
           renderThreadSelector();
         }
@@ -714,9 +908,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }
       }
-
-      const { AIClient } = await import('../shared/ai-client.js');
-      const ai = new AIClient(settings.provider, settings.apiKey, settings.model);
 
       let tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
       if (!tabs || !tabs.length) {
@@ -777,7 +968,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (label && ['button', 'a', 'h1', 'h2', 'h3', 'h4', 'span', 'div'].includes(tag)) {
                       selector = `${tag}:has-text("${label.slice(0, 25)}")`;
                     } else {
-                      selector = tag;
+                      // Icon-only elements (e.g. a search magnifying-glass button) have
+                      // no text/aria-label to key off. A bare tag name (e.g. "button")
+                      // would match every button on the page - build a precise
+                      // nth-of-type structural path instead so it stays unique.
+                      let path = [];
+                      let node = el;
+                      for (let depth = 0; depth < 4 && node && node.nodeType === 1 && node !== document.body; depth++) {
+                        let part = node.tagName.toLowerCase();
+                        const parent = node.parentElement;
+                        if (parent) {
+                          const sameTagSiblings = Array.from(parent.children).filter(c => c.tagName === node.tagName);
+                          if (sameTagSiblings.length > 1) part += `:nth-of-type(${sameTagSiblings.indexOf(node) + 1})`;
+                        }
+                        path.unshift(part);
+                        node = parent;
+                      }
+                      selector = path.join(' > ') || tag;
                     }
                   }
 
@@ -850,13 +1057,13 @@ ${domRes.interactiveSummary || ''}${logSummary}`;
         if (lowerPrompt.includes('negative test') || lowerPrompt.includes('boundary value')) {
           domContext += '\n\n' + expert.buildNegativeTestPrompt(domRes || {}, displayUserText);
         } else if (lowerPrompt.includes('page.route') || lowerPrompt.includes('mock api') || lowerPrompt.includes('mocking')) {
-          domContext += '\n\n' + expert.buildNetworkMockPrompt(liveState.logs || [], displayUserText);
+          domContext += '\n\n' + expert.buildNetworkMockPrompt(displayUserText);
         } else if (lowerPrompt.includes('laporan bug') || lowerPrompt.includes('bug report') || lowerPrompt.includes('jira issue')) {
           const bugDraft = expert.buildBugReportDraft({
             pageUrl: domRes?.url || activeTab?.url,
             title: `Log / Status pada ${domRes?.title || activeTab?.title || 'Halaman Web'}`,
             errorMsg: 'Detail masalah hasil audit QA Copilot'
-          }, liveState.logs || []);
+          });
           domContext += `\n\n[DRAF LAPORAN BUG UNTUK JIRA/GITHUB]:\n${bugDraft}`;
         }
       }
@@ -898,24 +1105,53 @@ You accommodate ALL Expert QA tasks, inquiries, and capabilities:
    - Build Test Strategy plans, Risk Assessment Matrices, test data generators, and CI/CD parallel execution configurations.
 
 Answer the user's specific request directly, comprehensively, and naturally using clean GitHub Markdown. Focus on problem-solving.
-DO NOT generate dummy JSON test step arrays unless the user explicitly requests generating step cards!`;
+DO NOT generate dummy JSON test step arrays unless the user explicitly requests generating step cards!
+
+${FORMATTING_RULES}`;
 
       } else {
-        systemPrompt = `You are QA Copilot, an expert Playwright Test Scenario Generator.
-Analyze the active webpage DOM & user requirements, provide a brief 1-2 sentence summary, and append a valid JSON array of Playwright test steps.
-Valid actions: "fill", "click", "assert_text", "assert_visible", "assert_url", "wait", "select".
-Example JSON Array:
+        systemPrompt = `You are QA Copilot, an expert Playwright Test Scenario Generator built into QA Flow Master Pro.
+CRITICAL RULE: DO NOT EXPLAIN OR BE VERBOSE! Your response MUST be EXACTLY 1 short opening sentence, followed IMMEDIATELY by ONE valid JSON array of step objects. NO CHIT-CHAT, NO MARKDOWN CODE FENCES, NO text after the array.
+
+Each step object: {"action": "...", "selector": "...", "value": "...", "description": "...", "risk": "LOW|MEDIUM|HIGH|CRITICAL"}. "risk" is optional - only set HIGH/CRITICAL for destructive or irreversible actions (payment, delete, real submit).
+
+FULL ACTION VOCABULARY - use whichever fits the scenario, you are NOT limited to fill/click/assert_text:
+- Interaksi: click, fill, select, hover, press (value=nama tombol keyboard, mis. "Enter" - hanya jika memang tidak ada tombol submit yang terlihat, misal search box; jika ada tombol Register/Submit/Daftar yang terlihat, WAJIB pakai click ke tombol tersebut, bukan press), go_back / go_forward (navigasi browser back/forward, tidak butuh selector - pakai kalau skenario memang perlu memverifikasi perilaku tombol back/forward, mis. "pastikan data form tidak hilang saat klik back")
+- Menunggu: wait (value=ms), wait_for_element_hidden, wait_for_text (value=teks yang muncul), wait_for_url_change, wait_for_network_idle
+- Assersi elemen: assert_visible, assert_enabled, assert_disabled, assert_checked, assert_unchecked, assert_text (value=substring), assert_value (value=nilai input), assert_count (value=jumlah elemen), assert_attribute (value="nama=nilai"), assert_css (value="properti=nilai"), assert_screenshot
+- Assersi halaman/kualitas: assert_url (value=regex/substring URL), assert_no_console_errors, assert_a11y (audit WCAG), assert_performance (value=JSON {"loadMs":3000}), assert_security_headers
+- Jaringan/API: api_request (selector=URL, value=JSON {"method","headers","body","status"}), mock_route (selector=URL glob, value=JSON {"status","body"} atau {"abort":true}), clear_mocks
+
+PRIORITAS SELECTOR (paling ke kurang stabil) - selalu pakai opsi yang tersedia di konteks halaman:
+1. [data-testid="..."]  2. role/aria (mis. [role="button"][aria-label="..."], button:has-text("..."))  3. [name="..."]  4. [placeholder="..."]  5. #id  6. CSS class (opsi terakhir).
+
+STANDAR KUALITAS TEST CASE:
+- Cakup happy path DAN minimal satu edge case/negative case yang relevan (field wajib kosong, format salah, panjang melebihi batas, kredensial salah) kecuali user secara eksplisit hanya minta happy path.
+- Setiap aksi yang mengubah state (fill/click/select) yang seharusnya menghasilkan efek terlihat WAJIB diikuti langkah assersi (assert_visible/assert_text/assert_url/assert_no_console_errors) untuk memverifikasi hasilnya - jangan biarkan skenario tanpa verifikasi.
+- Gunakan data tes yang realistis (mis. "qa.tester@example.com", "Passw0rd!23"), bukan asal-asalan, kecuali skenario memang menguji input tidak valid.
+- Hanya gunakan selector yang benar-benar ada pada konteks halaman yang diberikan - jangan mengarang selector.
+
+BULK DATA-ENTRY / INPUT MASSAL DARI EXCEL-CSV (kenali ini dari kata kunci: "excel", "csv", "ratusan/ribuan data", "input massal", "isi berulang", "banyak baris", "data berbeda-beda", pola Google Form "submit lalu isi lagi"):
+- JANGAN generate satu skenario dengan data hardcode sekali isi saja - user perlu mengisi form yang SAMA berulang kali dengan data BERBEDA tiap kali dari spreadsheet mereka.
+- Untuk setiap field yang nilainya akan berbeda per baris data, gunakan placeholder "{{nama_kolom}}" pada "value" (bukan data hardcode) - nama placeholder harus jadi nama HEADER KOLOM yang jelas dan masuk akal di CSV mereka (mis. "{{nama_lengkap}}", "{{email}}", "{{nomor_telepon}}"), supaya usernya tahu persis header apa yang harus dipakai di file CSV/Excel-nya.
+- WAJIB tambahkan langkah TERAKHIR yang membuka/mereset form untuk pengisian berikutnya (mis. klik link/tombol "Submit another response", "Isi lagi", "Kirim respons lain", atau assert_url kembali ke form kosong) - tanpa ini, hasil generate TIDAK BISA dipakai berulang untuk baris berikutnya.
+- Di satu kalimat pembuka (sebelum array JSON), SELALU beri tahu user langkah selanjutnya: simpan data mereka sebagai CSV dengan header kolom sesuai placeholder di atas, import lewat tombol import dataset (ikon panah-atas di kartu "QA Dummy Data Variables"), lalu klik tombol "Jalankan Semua Baris Dataset" untuk menjalankan form ini berulang untuk setiap baris - progres (baris ke berapa, berapa sukses/gagal) akan tampil live di banner eksekusi dan bisa dibatalkan kapan saja.
+
+Contoh format (ilustrasi saja - selalu hasilkan skenario nyata sesuai halaman/permintaan user):
+Skenario tes telah dibuat:
 [
-  {"action": "fill", "selector": "input[type='email']", "value": "user@example.com", "description": "Isi Email"},
-  {"action": "click", "selector": "button[type='submit']", "description": "Klik tombol Login"}
-]
-JSON ONLY, NO BACKTICKS.`;
+  {"action": "fill", "selector": "input[name='email']", "value": "qa.tester@example.com", "description": "Isi Email"},
+  {"action": "fill", "selector": "input[type='password']", "value": "Passw0rd!23", "description": "Isi Password"},
+  {"action": "click", "selector": "button[type='submit']", "description": "Klik tombol Login"},
+  {"action": "assert_url", "selector": "", "value": "dashboard", "description": "Verifikasi redirect ke dashboard"},
+  {"action": "assert_no_console_errors", "selector": "", "value": "", "description": "Pastikan tidak ada error console"}
+]`;
       }
 
       systemPrompt += `\n\n--- PENTING: MULTIMODAL VISION ---\nAnda kini diberikan GAMBAR TANGKAPAN LAYAR (SCREENSHOT) dari halaman aktif. Selalu padukan informasi visual (warna, elemen tampak, layout, posisi) dari gambar tersebut dengan data DOM teks untuk memberikan analisis yang sangat akurat, relevan, dan menghindari tebakan buta.`;
 
       const typingHtml = `<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
-      thinkingMsgEl = appendCopilotMsg(typingHtml, 'system', false, false);
+      thinkingMsgEl = appendCopilotMsg(typingHtml, 'system', false);
       let activeAttachments = [...currentAttachments];
       try {
         const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 50 });
@@ -950,6 +1186,8 @@ JSON ONLY, NO BACKTICKS.`;
       const hasValidSteps = Array.isArray(steps) && steps.length > 0;
 
       if (hasValidSteps) {
+        steps = await verifySelectorsOnPage(steps, activeTabId);
+
         let cleanReply = reply
           .replace(/```(?:json)?\s*\[[\s\S]*?\]\s*```/gi, '')
           .replace(jsonMatch[0], '')
@@ -973,6 +1211,7 @@ JSON ONLY, NO BACKTICKS.`;
           });
           currentThread.updatedAt = new Date().toISOString();
           chrome.storage.local.set({ qa_copilot_threads: copilotThreads, qa_active_copilot_thread_id: activeThreadId });
+          window.QAFlow.sendRuntimeMessage('SYNC_COPILOT_THREADS', { threads: copilotThreads, activeId: activeThreadId });
           window.QAFlow.sendRuntimeMessage('SAVE_COPILOT_THREAD', { thread: currentThread });
           renderThreadSelector();
         }
@@ -990,11 +1229,12 @@ JSON ONLY, NO BACKTICKS.`;
           });
           currentThread.updatedAt = new Date().toISOString();
           chrome.storage.local.set({ qa_copilot_threads: copilotThreads, qa_active_copilot_thread_id: activeThreadId });
+          window.QAFlow.sendRuntimeMessage('SYNC_COPILOT_THREADS', { threads: copilotThreads, activeId: activeThreadId });
           window.QAFlow.sendRuntimeMessage('SAVE_COPILOT_THREAD', { thread: currentThread });
           renderThreadSelector();
         }
 
-        appendCopilotMsg(reply, 'system', false);
+        appendCopilotMsg(reply, 'system');
       }
 
     } catch (e) {

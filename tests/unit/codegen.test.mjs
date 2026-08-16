@@ -53,6 +53,13 @@ test('generatePlaywrightCode emits a runnable spec for a click + fill', () => {
   assert.match(code, /test\('Automated QA Flow Test'/);
 });
 
+test('generatePlaywrightCode emits .press() for a selector, and page.keyboard.press() without one', () => {
+  const withSelector = ctx.generatePlaywrightCode([{ action: 'press', selector: '#search', value: 'Enter', description: 'Submit search' }], 'https://example.com');
+  assert.match(withSelector, /locator\("#search"\)\.press\("Enter"\)/);
+  const withoutSelector = ctx.generatePlaywrightCode([{ action: 'press', selector: '', value: 'Enter', description: 'Submit focused field' }], 'https://example.com');
+  assert.match(withoutSelector, /page\.keyboard\.press\("Enter"\)/);
+});
+
 test('generateCypressCode emits a cypress spec', () => {
   const code = ctx.generateCypressCode([{ action: 'click', selector: '#btn', value: '', description: '' }], 'https://example.com');
   assert.match(code, /describe\('Automated QA Flow Test'/);

@@ -38,22 +38,20 @@ ATURAN HASIL KELUARAN:
  * @returns {string} Specialized network mocking prompt
  */
 export function buildNetworkMockPrompt(logs = [], userPrompt = '') {
-  const netLogs = Array.isArray(logs)
-    ? logs.filter(l => ['network_error', 'network_slow', 'console_error'].includes(l.type)).slice(-10)
-    : [];
-
-  const formattedLogs = netLogs.length > 0
-    ? netLogs.map(l => `- [${l.type.toUpperCase()}] ${l.message || l.details?.url || JSON.stringify(l.details || {})}`).join('\n')
-    : 'Tidak ada log error jaringan/console yang terdeteksi secara otomatis.';
+  if (typeof logs === 'string') {
+    userPrompt = logs;
+    logs = [];
+  }
+  const logContext = Array.isArray(logs) && logs.length > 0 
+    ? logs.map(l => JSON.stringify(l)).join('\n') 
+    : '';
 
   return `[INSTRUKSI EXPERT QA - NETWORK MOCKING & API CONTRACT TESTING]
-Analisis log jaringan dan buatkan skrip Playwright route mocking (page.route) untuk simulasi respon API (misal error 500, response timeout, atau response JSON khusus).
-
-LOG NETWORK & CONSOLE AKTIF:
-${formattedLogs}
+Analisis log jaringan yang tertera pada bagian [LOG CONSOLE & NETWORK ERROR AKTIF PADA WEBPAGE] dan buatkan skrip Playwright route mocking (page.route) untuk simulasi respon API (misal error 500, response timeout, atau response JSON khusus).
 
 USER REQUEST / KONTEKS:
 ${userPrompt || 'Buatkan Playwright page.route() mock untuk API halaman ini'}
+${logContext ? `\nLOG JARINGAN SAAT INI:\n${logContext}` : ''}
 
 ATURAN HASIL KELUARAN:
 1. Tuliskan penjelasan singkat dalam Markdown mengenai skenario mock API.
@@ -133,7 +131,7 @@ export function healSelector(selector = '', elementInfo = {}) {
 
 /**
  * Drafts a structured Jira / GitHub Bug Report Ticket from failed test steps & error logs
- * @param {Object} failedInfo - Info about the failure { step, errorMsg, pageUrl, suiteName }
+ * @param {Object} failedInfo - Info about the failure { step, errorMsg, pageUrl, suiteName, expected, actual, severity }
  * @param {Array} logs - Console and network logs
  * @returns {string} Formatted Markdown Bug Report Ticket
  */
@@ -142,14 +140,15 @@ export function buildBugReportDraft(failedInfo = {}, logs = []) {
   const url = failedInfo.pageUrl || 'https://example.com';
   const errorMsg = failedInfo.errorMsg || 'Elemen tidak ditemukan atau timeout.';
   const suiteName = failedInfo.suiteName || 'QA Flow Test Suite';
+  const severity = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(String(failedInfo.severity || '').toUpperCase())
+    ? String(failedInfo.severity).toUpperCase()
+    : 'HIGH / CRITICAL';
+  const actualResult = failedInfo.actual || 'Mengalami timeout / error.';
+  const expectedResult = failedInfo.expected || 'Elemen berhasil diinteraksi dan assertion bernilai valid.';
 
-  const recentErrors = Array.isArray(logs)
-    ? logs.filter(l => ['console_error', 'uncaught_exception', 'network_error'].includes(l.type)).slice(-5)
-    : [];
-
-  const logBlock = recentErrors.length > 0
-    ? recentErrors.map(l => `\`\`\`\n[${l.type.toUpperCase()}] ${l.message || l.details?.url || JSON.stringify(l.details || {})}\n\`\`\``).join('\n')
-    : '`Tidak ada error console/network tercatat`';
+  const logContext = Array.isArray(logs) && logs.length > 0
+    ? logs.map(l => `[${l.type}] ${l.message || l.details?.url || JSON.stringify(l)}`).join('\n')
+    : '*(Tidak ada log error yang terdeteksi)*';
 
   return `### 🐞 ${title}
 
@@ -157,7 +156,7 @@ export function buildBugReportDraft(failedInfo = {}, logs = []) {
 - **Suite**: ${suiteName}
 - **URL Halaman**: \`${url}\`
 - **Waktu Laporan**: ${new Date().toLocaleString('id-ID')}
-- **Keparahan (Severity)**: **HIGH / CRITICAL**
+- **Keparahan (Severity)**: **${severity}**
 
 ---
 
@@ -171,13 +170,13 @@ Pengujian otomatis mengalami kegagalan pada aksi \`${failedInfo.step?.action || 
 1. Buka halaman URL \`${url}\`
 2. Jalankan skenario tes \`${suiteName}\`
 3. Eksekusi langkah: \`${failedInfo.step?.description || failedInfo.step?.action || 'Aksi'}\` dengan selector \`${failedInfo.step?.selector || 'N/A'}\`
-4. **Hasil Aktual**: Mengalami timeout / error.
-5. **Hasil Diharapkan**: Elemen berhasil diinteraksi dan assertion bernilai valid.
+4. **Hasil Aktual**: ${actualResult}
+5. **Hasil Diharapkan**: ${expectedResult}
 
 ---
 
 ### 📊 Log Traceback (Console & Network)
-${logBlock}
+${logContext}
 
 ---
 *Dibuat otomatis oleh QA Flow Master Pro — AI Bug Report Generator*`;

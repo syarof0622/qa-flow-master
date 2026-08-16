@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const harObject = {
       log: {
         version: '1.2',
-        creator: { name: 'QA Flow Master Pro', version: '4.3.0' },
+        creator: { name: 'QA Flow Master Pro', version: '4.4.0' },
         pages: [{ startedDateTime: new Date().toISOString(), id: 'page_1', title: 'QA Flow Network Export', pageTimings: {} }],
         entries: harEntries
       }

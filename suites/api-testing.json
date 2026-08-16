@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "environment": { "name": "Public JSON API", "baseUrl": "https://jsonplaceholder.typicode.com", "variables": {} },
+  "dataset": { "name": "Default", "rows": [{}] },
+  "suite": {
+    "name": "API Testing - JSON Contract Validation",
+    "description": "Demonstrates the api_request action against a real public JSON API: GET with path assertions + JSON-schema validation, and POST creating a resource. No browser page interaction, pure API/network testing.",
+    "owner": "QA Automation",
+    "priority": "P1",
+    "tags": ["api", "ci"],
+    "startUrl": "https://example.com",
+    "beforeEach": [],
+    "steps": [
+      {
+        "id": "get-todo",
+        "action": "api_request",
+        "selector": "{{baseUrl}}/todos/1",
+        "value": "{\"method\":\"GET\",\"status\":200,\"schema\":{\"type\":\"object\",\"required\":[\"id\",\"userId\",\"title\",\"completed\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"userId\":{\"type\":\"integer\"},\"title\":{\"type\":\"string\"},\"completed\":{\"type\":\"boolean\"}}},\"assertions\":[{\"path\":\"$.id\",\"equals\":1},{\"path\":\"$.title\",\"exists\":true}]}",
+        "description": "GET /todos/1 sesuai schema & path assertion",
+        "enabled": true,
+        "timeout": 10000
+      },
+      {
+        "id": "create-post",
+        "action": "api_request",
+        "selector": "{{baseUrl}}/posts",
+        "value": "{\"method\":\"POST\",\"headers\":{\"Content-Type\":\"application/json\"},\"body\":{\"title\":\"QA Flow test post\",\"body\":\"Dibuat oleh suite otomatis\",\"userId\":1},\"status\":201,\"assertions\":[{\"path\":\"$.title\",\"contains\":\"QA Flow\"},{\"path\":\"$.id\",\"exists\":true}]}",
+        "description": "POST /posts membuat resource baru",
+        "enabled": true,
+        "timeout": 10000
+      }
+    ],
+    "afterEach": []
+  }
+}

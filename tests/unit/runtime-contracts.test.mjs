@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
-import path from 'node:path';
 import vm from 'node:vm';
 
 const contractSource = await readFile(new URL('../../shared/contracts.js', import.meta.url), 'utf8');
@@ -11,7 +10,9 @@ const backgroundSource = await (async () => {
   const parts = [await readFile(new URL('../../background.js', import.meta.url), 'utf8')];
   const modDir = new URL('../../background/', import.meta.url);
   const files = (await readdir(modDir)).filter(f => f.endsWith('.js')).sort();
-  for (const f of files) parts.push(await readFile(path.join(modDir.pathname, f), 'utf8'));
+  // Resolve against modDir (not path.join on modDir.pathname) - on Windows a
+  // file:// URL pathname looks like "/C:/Users/...", which path.join mangles.
+  for (const f of files) parts.push(await readFile(new URL(f, modDir), 'utf8'));
   return parts.join('\n');
 })();
 const sandbox = { self: {}, Set, Object, Array, String };

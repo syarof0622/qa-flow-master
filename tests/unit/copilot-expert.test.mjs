@@ -68,3 +68,24 @@ test('buildBugReportDraft creates structured Markdown Jira issue ticket', () => 
   assert.match(draft, /Uncaught TypeError/);
   assert.match(draft, /Steps to Reproduce/);
 });
+
+test('buildBugReportDraft uses explicit severity/expected/actual when the caller (AI Agent) provides them', () => {
+  const draft = buildBugReportDraft({
+    title: 'Submit gagal karena API 500',
+    pageUrl: 'https://toefl.example.my.id/register',
+    errorMsg: 'POST /api/register responded 500',
+    severity: 'CRITICAL',
+    expected: 'Akun berhasil dibuat dan redirect ke dashboard',
+    actual: 'Halaman menampilkan error generik, tidak ada redirect',
+    step: { action: 'click', selector: 'button[type=submit]', description: 'Klik Daftar' }
+  });
+  assert.match(draft, /\*\*CRITICAL\*\*/);
+  assert.match(draft, /Akun berhasil dibuat dan redirect ke dashboard/);
+  assert.match(draft, /Halaman menampilkan error generik/);
+});
+
+test('buildBugReportDraft falls back to generic severity/expected/actual when omitted', () => {
+  const draft = buildBugReportDraft({ title: 'X', pageUrl: 'https://x.test', errorMsg: 'err' });
+  assert.match(draft, /HIGH \/ CRITICAL/);
+  assert.match(draft, /Elemen berhasil diinteraksi dan assertion bernilai valid\./);
+});

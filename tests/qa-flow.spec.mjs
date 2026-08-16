@@ -83,9 +83,13 @@ async function executeStep(step, { page, request, testInfo, state, interpolate }
   const value = interpolate(step.value);
   const timeout = Math.max(250, Math.min(60000, Number(step.timeout) || 5000));
   const selectors = [step.selector, ...(step.fallbackSelectors || [])].filter(Boolean).map(interpolate);
-  const targetRequired = !['assert_url','assert_screenshot','assert_network_status','assert_no_console_errors','assert_a11y','assert_performance','assert_security_headers','api_request','mock_route','clear_mocks','use_flow','wait','wait_for_text','wait_for_url_change','wait_for_network_idle'].includes(action);
+  // 'press' can target a specific element (Locator.press) or - when no selector
+  // is given - simulate a global keypress on whatever currently has focus (the
+  // common "type into a search box, hit Enter" pattern with no dedicated button).
+  const targetRequired = !['assert_url','assert_screenshot','assert_network_status','assert_no_console_errors','assert_a11y','assert_performance','assert_security_headers','api_request','mock_route','clear_mocks','use_flow','wait','press','go_back','go_forward','wait_for_text','wait_for_url_change','wait_for_network_idle'].includes(action);
   const scope = await resolveStepScope(page, step, interpolate);
-  let locator = targetRequired && selectors.length ? await resolveLocator(scope, selectors, timeout) : null;
+  const shouldResolveLocator = selectors.length > 0 && (targetRequired || action === 'press');
+  let locator = shouldResolveLocator ? await resolveLocator(scope, selectors, timeout) : null;
   
   if (targetRequired && !locator) {
     if (process.env.QA_AI_API_KEY) {
@@ -121,6 +125,18 @@ async function executeStep(step, { page, request, testInfo, state, interpolate }
     case 'fill': await locator.fill(value, { timeout }); break;
     case 'select': await locator.selectOption(value, { timeout }); break;
     case 'hover': await locator.hover({ timeout }); break;
+    case 'press': {
+      const key = value || 'Enter';
+      if (step.selector) {
+        if (!locator) throw new Error(`Element not found: ${selectors.join(' | ')}`);
+        await locator.press(key, { timeout });
+      } else {
+        await page.keyboard.press(key);
+      }
+      break;
+    }
+    case 'go_back': state.previousUrl = page.url(); await page.goBack({ timeout, waitUntil: 'domcontentloaded' }); break;
+    case 'go_forward': state.previousUrl = page.url(); await page.goForward({ timeout, waitUntil: 'domcontentloaded' }); break;
     case 'assert_visible': await expect(locator).toBeVisible({ timeout }); break;
     case 'assert_enabled': await expect(locator).toBeEnabled({ timeout }); break;
     case 'assert_disabled': await expect(locator).toBeDisabled({ timeout }); break;

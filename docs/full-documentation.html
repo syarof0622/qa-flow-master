@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QA Flow Master Pro — Dokumentasi Lengkap</title>
+<style>
+  :root {
+    --paper: #F5F6F4;
+    --paper-raised: #FFFFFF;
+    --paper-sunken: #EEF0EC;
+    --ink: #14181C;
+    --ink-soft: #565F58;
+    --ink-faint: #838C84;
+    --line: #DEE2DE;
+    --line-strong: #C6CCC4;
+    --accent: #0E7C66;
+    --accent-hover: #0A6350;
+    --accent-soft: #E4F3EE;
+    --accent-ink: #063D32;
+    --violet: #6547C9;
+    --violet-soft: #EFEBFB;
+    --violet-ink: #3C2C86;
+    --amber: #935610;
+    --amber-soft: #FBEFDC;
+    --red: #A6363B;
+    --red-soft: #FBEAEA;
+    --code-bg: #1B2430;
+    --code-ink: #E7EBF0;
+    --code-accent: #7DDCC0;
+    --code-comment: #7C8AA0;
+    --shadow: 0 1px 2px rgba(20,24,28,0.04), 0 8px 24px -12px rgba(20,24,28,0.12);
+    --font-display: -apple-system, "Segoe UI Semibold", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-body: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0E1210;
+      --paper-raised: #171C1A;
+      --paper-sunken: #0A0D0B;
+      --ink: #E7ECEA;
+      --ink-soft: #A3ACA6;
+      --ink-faint: #6D766F;
+      --line: #262C29;
+      --line-strong: #333A36;
+      --accent: #3BCBA0;
+      --accent-hover: #5AD8B3;
+      --accent-soft: #10322A;
+      --accent-ink: #8FE6C9;
+      --violet: #A793EE;
+      --violet-soft: #241C3B;
+      --violet-ink: #C7B8F5;
+      --amber: #E3AC55;
+      --amber-soft: #362509;
+      --red: #E58B8F;
+      --red-soft: #3A1B1C;
+      --code-bg: #0A0D0C;
+      --code-ink: #DCE7E2;
+      --code-accent: #6BE2BE;
+      --code-comment: #5C6B76;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0E1210;
+    --paper-raised: #171C1A;
+    --paper-sunken: #0A0D0B;
+    --ink: #E7ECEA;
+    --ink-soft: #A3ACA6;
+    --ink-faint: #6D766F;
+    --line: #262C29;
+    --line-strong: #333A36;
+    --accent: #3BCBA0;
+    --accent-hover: #5AD8B3;
+    --accent-soft: #10322A;
+    --accent-ink: #8FE6C9;
+    --violet: #A793EE;
+    --violet-soft: #241C3B;
+    --violet-ink: #C7B8F5;
+    --amber: #E3AC55;
+    --amber-soft: #362509;
+    --red: #E58B8F;
+    --red-soft: #3A1B1C;
+    --code-bg: #0A0D0C;
+    --code-ink: #DCE7E2;
+    --code-accent: #6BE2BE;
+    --code-comment: #5C6B76;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent); }
+  code { font-family: var(--font-mono); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid var(--line);
+    background: var(--paper-raised);
+    padding: 28px 20px 40px;
+  }
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 6px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand-mark {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .brand-mark svg { flex-shrink: 0; color: var(--accent); }
+  .brand-name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+  }
+  .brand-version {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    border-radius: 999px;
+    padding: 2px 9px;
+    margin-top: 6px;
+  }
+  .brand-tagline {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .nav-group { margin-top: 20px; }
+  .nav-group-title {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    padding: 0 10px;
+    margin-bottom: 6px;
+  }
+  .nav-list { list-style: none; margin: 0; padding: 0; }
+  .nav-link {
+    display: block;
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: 0.87rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .nav-link:hover { background: var(--paper-sunken); color: var(--ink); }
+  .nav-link.active {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+
+  /* ---------- Main content ---------- */
+  main { min-width: 0; padding: 48px clamp(20px, 5vw, 72px) 120px; }
+  .content { max-width: 760px; }
+
+  .hero {
+    padding-bottom: 36px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 4vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  .hero-lead {
+    font-size: 1.05rem;
+    color: var(--ink-soft);
+    max-width: 620px;
+    margin: 0 0 20px;
+  }
+  .flow-rule {
+    height: 3px;
+    width: 100%;
+    max-width: 340px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--accent) 50%, transparent 50%, transparent 100%);
+    background-size: 28px 3px;
+    opacity: 0.7;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .flow-rule { animation: flow-move 2.4s linear infinite; }
+  }
+  @keyframes flow-move { to { background-position: 28px 0; } }
+
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+  }
+  .meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    background: var(--paper-sunken);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 12px;
+  }
+
+  section.doc-section {
+    padding: 56px 0 8px;
+    border-bottom: 1px solid var(--line);
+    scroll-margin-top: 24px;
+  }
+  section.doc-section:last-of-type { border-bottom: none; }
+
+  .section-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--ink-faint);
+    margin-bottom: 10px;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--font-display);
+    font-size: 1.12rem;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    margin: 30px 0 10px;
+  }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  strong { font-weight: 700; }
+
+  .kbd {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.8em;
+    background: var(--paper-sunken);
+    border: 1px solid var(--line-strong);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 1px 6px;
+  }
+
+  code.inline {
+    background: var(--paper-sunken);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.88em;
+    color: var(--accent-ink);
+  }
+
+  /* ---------- Callouts (echoes the app's own markdown alert boxes) ---------- */
+  .callout {
+    display: flex;
+    gap: 11px;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--ink-faint);
+    background: var(--paper-sunken);
+    border-radius: 9px;
+    padding: 14px 16px;
+    margin: 18px 0;
+    font-size: 0.92rem;
+  }
+  .callout svg { flex-shrink: 0; margin-top: 2px; }
+  .callout-body p:last-child { margin-bottom: 0; }
+  .callout-label {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: block;
+    margin-bottom: 3px;
+  }
+  .callout.tip { border-left-color: var(--accent); background: var(--accent-soft); }
+  .callout.tip .callout-label, .callout.tip svg { color: var(--accent-ink); }
+  .callout.warn { border-left-color: var(--amber); background: var(--amber-soft); }
+  .callout.warn .callout-label, .callout.warn svg { color: var(--amber); }
+  .callout.important { border-left-color: var(--violet); background: var(--violet-soft); }
+  .callout.important .callout-label, .callout.important svg { color: var(--violet-ink); }
+  .callout.note { border-left-color: var(--ink-faint); }
+  .callout.note .callout-label { color: var(--ink-soft); }
+
+  /* ---------- Cards / grids ---------- */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+    margin: 18px 0 8px;
+  }
+  .feature-card {
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+  .feature-card h4 {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .feature-card h4 svg { color: var(--accent); flex-shrink: 0; }
+  .feature-card p { font-size: 0.86rem; color: var(--ink-soft); margin: 0; }
+
+  .step-list { list-style: none; margin: 18px 0; padding: 0; counter-reset: step; }
+  .step-list li {
+    counter-increment: step;
+    position: relative;
+    padding: 2px 0 18px 34px;
+    border-left: 2px solid var(--line);
+    margin-left: 12px;
+  }
+  .step-list li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .step-list li::before {
+    content: counter(step);
+    position: absolute;
+    left: -13px;
+    top: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step-list strong { display: block; margin-bottom: 2px; }
+  .step-list span { font-size: 0.9rem; color: var(--ink-soft); }
+
+  /* ---------- Tables ---------- */
+  .table-wrap { overflow-x: auto; margin: 18px 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.87rem; background: var(--paper-raised); }
+  th, td { text-align: left; padding: 9px 13px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td.wrap { white-space: normal; }
+  th {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-faint);
+    background: var(--paper-sunken);
+    position: sticky;
+    top: 0;
+  }
+  tr:last-child td { border-bottom: none; }
+  td code { color: var(--accent-ink); }
+  .tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-radius: 5px;
+    padding: 1px 7px;
+  }
+  .tag.interaction { background: var(--accent-soft); color: var(--accent-ink); }
+  .tag.navigation { background: var(--violet-soft); color: var(--violet-ink); }
+  .tag.assertion { background: #E7EEF7; color: #2A4E7A; }
+  .tag.visual { background: #F3E9F8; color: #6B2E82; }
+  .tag.network { background: var(--amber-soft); color: var(--amber); }
+  .tag.quality { background: var(--paper-sunken); color: var(--ink-soft); border: 1px solid var(--line); }
+  .tag.security { background: var(--red-soft); color: var(--red); }
+  .tag.api { background: #E4F0F6; color: #205070; }
+  .tag.flow { background: var(--accent-soft); color: var(--accent-ink); }
+  .tag.wait { background: var(--paper-sunken); color: var(--ink-soft); border: 1px solid var(--line); }
+  .yn-y { color: var(--accent-ink); font-weight: 700; }
+  .yn-n { color: var(--ink-faint); }
+
+  /* ---------- Code blocks ---------- */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 0.83rem;
+    line-height: 1.6;
+    margin: 16px 0;
+  }
+  pre .cm { color: var(--code-comment); }
+  pre .kw { color: var(--code-accent); }
+
+  /* ---------- Misc ---------- */
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    background: var(--paper-sunken);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 11px;
+  }
+  footer.doc-footer {
+    max-width: 760px;
+    padding: 40px 0 0;
+    color: var(--ink-faint);
+    font-size: 0.82rem;
+  }
+
+  .to-top {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+    margin-top: 10px;
+  }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar {
+      position: static;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      padding: 18px 16px;
+    }
+    .nav-group { margin-top: 14px; }
+    main { padding: 32px 18px 100px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <nav class="sidebar" aria-label="Navigasi dokumentasi">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 11l3 3L22 4"/>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        <span class="brand-name">QA Flow Master Pro</span>
+      </div>
+      <span class="brand-version">v4.4.0</span>
+      <span class="brand-tagline">Dokumentasi fitur &amp; panduan penggunaan</span>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Mulai</div>
+      <ul class="nav-list">
+        <li><a class="nav-link" href="#ringkasan">Ringkasan</a></li>
+        <li><a class="nav-link" href="#instalasi">Instalasi &amp; Quick Start</a></li>
+        <li><a class="nav-link" href="#antarmuka">Tur Antarmuka</a></li>
+      </ul>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Menulis Test</div>
+      <ul class="nav-list">
+        <li><a class="nav-link" href="#merekam">Merekam &amp; Langkah Manual</a></li>
+        <li><a class="nav-link" href="#aksi">Referensi Kosakata Aksi</a></li>
+        <li><a class="nav-link" href="#dataset">Dataset &amp; Data Dummy</a></li>
+        <li><a class="nav-link" href="#bulk">Input Data Massal</a></li>
+      </ul>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">AI Copilot</div>
+      <ul class="nav-list">
+        <li><a class="nav-link" href="#copilot">Chat &amp; Generate Test</a></li>
+        <li><a class="nav-link" href="#plan-mode">Plan Mode</a></li>
+        <li><a class="nav-link" href="#agent">AI Sharing Agent</a></li>
+      </ul>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Kualitas &amp; Pelaporan</div>
+      <ul class="nav-list">
+        <li><a class="nav-link" href="#visual-api">Visual, API &amp; Quality Gate</a></li>
+        <li><a class="nav-link" href="#monitor">Live Log Monitor</a></li>
+        <li><a class="nav-link" href="#readiness">QA Readiness</a></li>
+        <li><a class="nav-link" href="#bug-exporter">Bug Exporter</a></li>
+        <li><a class="nav-link" href="#laporan">Laporan &amp; Riwayat</a></li>
+      </ul>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-title">Otomasi &amp; CI</div>
+      <ul class="nav-list">
+        <li><a class="nav-link" href="#cli-ci">CLI Runner &amp; CI/CD</a></li>
+        <li><a class="nav-link" href="#keamanan">Catatan Keamanan</a></li>
+        <li><a class="nav-link" href="#pintasan">Pintasan Keyboard</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="content">
+
+      <div class="hero">
+        <div class="hero-eyebrow">Dokumentasi Produk · v4.4.0</div>
+        <h1>Semua fitur QA Flow Master Pro, dan cara memakainya.</h1>
+        <p class="hero-lead">Ekstensi Chrome/Edge untuk merekam interaksi web, menyusunnya menjadi test case, menjalankannya berulang dengan data berbeda, dan membiarkan AI yang mengeksplorasi halaman untuk Anda — lalu memvalidasi semuanya lewat CLI Playwright dan CI.</p>
+        <div class="flow-rule" role="presentation"></div>
+        <div class="hero-meta">
+          <span class="meta-pill">Manifest V3 · Side Panel</span>
+          <span class="meta-pill">32 aksi test</span>
+          <span class="meta-pill">Gemini / Claude / DeepSeek</span>
+          <span class="meta-pill">CLI Playwright + GitHub Actions</span>
+        </div>
+      </div>
+
+      <!-- ================= RINGKASAN ================= -->
+      <section class="doc-section" id="ringkasan">
+        <div class="section-eyebrow">01 · Ringkasan</div>
+        <h2>Apa itu QA Flow Master Pro</h2>
+        <p>QA Flow Master Pro adalah <strong>recorder Chrome</strong> sekaligus <strong>runner Playwright produksi</strong>. Test yang direkam di ekstensi diekspor sebagai JSON, divalidasi terhadap skema, dijalankan terhadap dataset, dan bisa dipakai sebagai gerbang kualitas (quality gate) di CI. Semua ini berjalan <em>local-first</em> — tidak wajib akun, kunci API provider AI tersimpan di perangkat, dan tidak ada proxy backend antara ekstensi dan model AI.</p>
+
+        <div class="card-grid">
+          <div class="feature-card">
+            <h4><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>Recorder &amp; Authoring</h4>
+            <p>Rekam interaksi nyata, selector CSS dibuat otomatis dengan hingga 8 fallback, atau tulis langkah manual dari 32 aksi yang tersedia.</p>
+          </div>
+          <div class="feature-card">
+            <h4><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>QA Copilot</h4>
+            <p>Buat skenario test dari bahasa natural atau screenshot, dengan mode diskusi (Plan Mode) sebelum eksekusi.</p>
+          </div>
+          <div class="feature-card">
+            <h4><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/></svg>AI Sharing Agent</h4>
+            <p>AI menjelajahi halaman secara otonom — klik, isi form, verifikasi hasil — lalu menyerahkan test case jadi untuk disimpan atau dijalankan.</p>
+          </div>
+          <div class="feature-card">
+            <h4><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m-4-4 4 4 4-4"/><path d="M4 19h16"/></svg>Input Data Massal</h4>
+            <p>Jalankan satu form berulang untuk ratusan-ribuan baris dataset, dengan progres langsung, lanjut-walau-gagal, dan retry baris gagal.</p>
+          </div>
+          <div class="feature-card">
+            <h4><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Bug Exporter</h4>
+            <p>Ekspor bug satu klik ke Slack, Teams, GitHub, Linear, atau Jira lengkap dengan konteks langkah reproduksi.</p>
+          </div>
+          <div class="feature-card">
+            <h4><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Quality Gate CI</h4>
+            <p>Validasi skema, pemindaian secret, HTTP tidak aman, dan kerentanan dependency — otomatis lewat GitHub Actions.</p>
+          </div>
+        </div>
+
+        <div class="callout note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+          <div class="callout-body">
+            <span class="callout-label">Catatan</span>
+            <p>Dokumen ini menjelaskan <strong>apa yang bisa dilakukan tiap fitur dan bagaimana memakainya</strong>. Untuk pola penulisan suite JSON tingkat lanjut dan konfigurasi CI, lihat <code class="inline">docs/expert-guide.md</code>. Untuk detail desain UI, lihat <code class="inline">docs/ui-ux-guide.md</code>.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= INSTALASI ================= -->
+      <section class="doc-section" id="instalasi">
+        <div class="section-eyebrow">02 · Mulai</div>
+        <h2>Instalasi &amp; quick start</h2>
+
+        <h3>Memasang ekstensi (mode developer)</h3>
+        <ol class="step-list">
+          <li><strong>Buka halaman ekstensi.</strong> <span>Kunjungi <code class="inline">chrome://extensions</code> (atau <code class="inline">edge://extensions</code>) dan aktifkan <strong>Developer mode</strong> di pojok kanan atas.</span></li>
+          <li><strong>Muat folder proyek.</strong> <span>Klik <strong>Load unpacked</strong>, lalu pilih root folder repositori ini (folder yang berisi <code class="inline">manifest.json</code>).</span></li>
+          <li><strong>Buka Side Panel.</strong> <span>Klik ikon ekstensi di toolbar browser — QA Flow Master Pro tampil sebagai panel di sisi kanan, bukan popup, sehingga tetap terbuka saat Anda berpindah tab.</span></li>
+          <li><strong>Rekam atau tulis langkah, lalu ekspor JSON.</strong> <span>Suite yang diekspor bisa divalidasi dan dijalankan ulang dari command line.</span></li>
+        </ol>
+
+        <h3>Menyiapkan CLI runner</h3>
+        <p>Runner CLI menjalankan suite JSON yang sama dengan Playwright — dipakai untuk regresi lokal maupun CI.</p>
+        <pre><span class="cm"># pasang dependency &amp; browser Playwright</span>
+npm ci
+npx playwright install chromium
+
+<span class="cm"># pemeriksaan cepat sebelum menjalankan apa pun</span>
+npm run check          <span class="cm"># syntax-check semua modul</span>
+npm test                <span class="cm"># unit test</span>
+
+<span class="cm"># validasi &amp; jalankan satu suite</span>
+npm run qa:validate -- suites/smoke.json
+npm run qa:run -- suites/smoke.json</pre>
+
+        <p>Hasil eksekusi ditulis ke folder <code class="inline">artifacts/</code>: laporan HTML (<code class="inline">html-report/index.html</code>), <code class="inline">junit.xml</code>, <code class="inline">results.json</code>, serta screenshot/video/trace kegagalan.</p>
+      </section>
+
+      <!-- ================= ANTARMUKA ================= -->
+      <section class="doc-section" id="antarmuka">
+        <div class="section-eyebrow">03 · Mulai</div>
+        <h2>Tur antarmuka: lima tab Side Panel</h2>
+        <p>Seluruh alur kerja ada dalam satu panel dengan lima tab. Berpindah tab tidak menghentikan rekaman atau eksekusi yang sedang berjalan di latar belakang.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tab</th><th>Isi</th><th>Kapan dipakai</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Builder</strong></td><td class="wrap">Tombol <strong>Rekam</strong>, daftar langkah tes, form tambah langkah manual, panel dataset &amp; input massal.</td><td class="wrap">Menyusun atau mengedit test case.</td></tr>
+              <tr><td><strong>Copilot</strong></td><td class="wrap">Percakapan QA Copilot, toggle <strong>Plan</strong> dan <strong>Agent</strong>, lampiran gambar/screenshot.</td><td class="wrap">Meminta AI membuat, mendiskusikan, atau menjalankan test.</td></tr>
+              <tr><td><strong>Presets</strong></td><td class="wrap">Variabel data dummy (<code class="inline">{{email}}</code>, <code class="inline">{{nik}}</code>, dst.), pemilih dataset/environment, import CSV/JSON.</td><td class="wrap">Menyuntik data acak realistis atau memilih dataset aktif.</td></tr>
+              <tr><td><strong>Monitor</strong></td><td class="wrap">Log console &amp; network live dari tab aktif, dengan filter method/status/domain.</td><td class="wrap">Debug langsung sambil berinteraksi dengan halaman.</td></tr>
+              <tr><td><strong>Reports</strong></td><td class="wrap">QA Readiness (requirement, defect, sign-off), riwayat eksekusi, riwayat video, Export &amp; Report Suite.</td><td class="wrap">Melihat hasil, mengelola governance, mengekspor bukti.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout tip">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/></svg>
+          <div class="callout-body">
+            <span class="callout-label">Tip</span>
+            <p>Menu titik-tiga di kartu <strong>QA Readiness</strong> (tab Reports) adalah pusat kendali fitur lanjutan: Requirements, Add defect, Defect board, Exploratory session, Sign-off, Video/AI Settings, Riwayat versi, 1-Click Export Bug, Rewind 30s Video Bug, Cek IP &amp; Geolokasi, dan Backup workspace.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= MEREKAM ================= -->
+      <section class="doc-section" id="merekam">
+        <div class="section-eyebrow">04 · Menulis Test</div>
+        <h2>Merekam &amp; menulis langkah manual</h2>
+
+        <h3>Merekam interaksi nyata</h3>
+        <p>Klik <strong>Rekam</strong> di tab Builder lalu lakukan aksi seperti biasa di halaman: klik, ketik, pilih dropdown, centang checkbox. Setiap interaksi otomatis menjadi satu langkah tes dengan selector CSS yang tangguh — sistem mencoba hingga <strong>8 selector fallback</strong> (id, data-testid, teks, posisi DOM, dst.) supaya test tidak rapuh saat markup berubah sedikit.</p>
+        <p>Tombol <strong>Layar</strong> merekam video sesi browsing sebagai bukti eksekusi, tersimpan di riwayat video (tab Reports).</p>
+
+        <h3>Menambah langkah manual</h3>
+        <p>Gunakan form di bawah daftar langkah untuk menambah langkah tanpa merekam — cocok untuk assertion, wait, atau aksi API/network yang tidak berasal dari klik nyata:</p>
+        <ul>
+          <li><strong>Tipe Aksi</strong> — pilih dari 32 aksi terdaftar (lihat <a href="#aksi">referensi kosakata aksi</a>).</li>
+          <li><strong>Target CSS Selector</strong> — wajib untuk aksi yang menyasar elemen (mis. <code class="inline">click</code>, <code class="inline">fill</code>); dikosongkan otomatis untuk aksi tanpa target seperti <code class="inline">press</code>, <code class="inline">go_back</code>, <code class="inline">go_forward</code>, atau <code class="inline">wait</code>.</li>
+          <li><strong>Value / Expected Text</strong> — nilai yang diisi atau nilai yang diharapkan, tergantung aksinya.</li>
+          <li><strong>Group, Timeout, Requirement ID, Risk</strong> — metadata opsional untuk traceability dan governance QA Readiness.</li>
+        </ul>
+
+        <div class="callout note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+          <div class="callout-body">
+            <span class="callout-label">Catatan</span>
+            <p>Delay antar langkah, jumlah retry otomatis, opsi <strong>stop on error</strong>, dan opsi <strong>rekam video</strong> saat run diatur di toolbar tab Builder, tepat di sebelah tombol <strong>Jalan</strong>.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= AKSI ================= -->
+      <section class="doc-section" id="aksi">
+        <div class="section-eyebrow">05 · Menulis Test</div>
+        <h2>Referensi kosakata aksi</h2>
+        <p>32 aksi tersedia di manual step builder, AI Copilot, AI Sharing Agent, dan CLI runner — didefinisikan satu kali sebagai sumber kebenaran bersama, sehingga perilakunya identik di semua jalur eksekusi.</p>
+
+        <h3>Interaksi &amp; navigasi</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Aksi</th><th>Kategori</th><th>Target</th><th>Value</th><th>Keterangan</th></tr></thead>
+            <tbody>
+              <tr><td><code>click</code></td><td><span class="tag interaction">interaction</span></td><td class="yn-y">Ya</td><td class="yn-n">—</td><td class="wrap">Klik elemen.</td></tr>
+              <tr><td><code>fill</code></td><td><span class="tag interaction">interaction</span></td><td class="yn-y">Ya</td><td class="yn-y">Ya</td><td class="wrap">Isi input teks. Mendukung placeholder data dummy, mis. <code class="inline">{{email}}</code>.</td></tr>
+              <tr><td><code>select</code></td><td><span class="tag interaction">interaction</span></td><td class="yn-y">Ya</td><td class="yn-y">Ya</td><td class="wrap">Pilih opsi pada elemen <code class="inline">&lt;select&gt;</code>.</td></tr>
+              <tr><td><code>hover</code></td><td><span class="tag interaction">interaction</span></td><td class="yn-y">Ya</td><td class="yn-n">—</td><td class="wrap">Arahkan pointer ke elemen (memicu tooltip/menu hover).</td></tr>
+              <tr><td><code>press</code></td><td><span class="tag interaction">interaction</span></td><td class="yn-n">—</td><td class="yn-y">Ya</td><td class="wrap">Tekan tombol keyboard, mis. <code class="inline">Enter</code>, <code class="inline">Tab</code>, <code class="inline">Escape</code>.</td></tr>
+              <tr><td><code>go_back</code></td><td><span class="tag navigation">navigation</span></td><td class="yn-n">—</td><td class="yn-n">—</td><td class="wrap">Kembali ke halaman sebelumnya lewat riwayat browser asli (<code class="inline">chrome.tabs.goBack</code>), bukan simulasi JS.</td></tr>
+              <tr><td><code>go_forward</code></td><td><span class="tag navigation">navigation</span></td><td class="yn-n">—</td><td class="yn-n">—</td><td class="wrap">Maju ke halaman berikutnya lewat riwayat browser asli.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Assertion</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Aksi</th><th>Target</th><th>Value</th><th>Keterangan</th></tr></thead>
+            <tbody>
+              <tr><td><code>assert_visible</code></td><td class="yn-y">Ya</td><td class="yn-n">—</td><td class="wrap">Elemen tampak di layar.</td></tr>
+              <tr><td><code>assert_enabled</code></td><td class="yn-y">Ya</td><td class="yn-n">—</td><td class="wrap">Elemen tidak dalam keadaan disabled.</td></tr>
+              <tr><td><code>assert_disabled</code></td><td class="yn-y">Ya</td><td class="yn-n">—</td><td class="wrap">Elemen dalam keadaan disabled.</td></tr>
+              <tr><td><code>assert_checked</code></td><td class="yn-y">Ya</td><td class="yn-n">—</td><td class="wrap">Checkbox/radio dalam keadaan tercentang.</td></tr>
+              <tr><td><code>assert_unchecked</code></td><td class="yn-y">Ya</td><td class="yn-n">—</td><td class="wrap">Checkbox/radio dalam keadaan tidak tercentang.</td></tr>
+              <tr><td><code>assert_text</code></td><td class="yn-y">Ya</td><td class="yn-y">Ya</td><td class="wrap">Teks elemen sesuai (mendukung partial match).</td></tr>
+              <tr><td><code>assert_value</code></td><td class="yn-y">Ya</td><td class="yn-y">Ya</td><td class="wrap">Nilai input/form sesuai.</td></tr>
+              <tr><td><code>assert_attribute</code></td><td class="yn-y">Ya</td><td class="yn-y">Ya</td><td class="wrap">Nilai atribut HTML sesuai, mis. <code class="inline">href</code>, <code class="inline">aria-*</code>.</td></tr>
+              <tr><td><code>assert_css</code></td><td class="yn-y">Ya</td><td class="yn-y">Ya</td><td class="wrap">Properti CSS terkomputasi sesuai.</td></tr>
+              <tr><td><code>assert_count</code></td><td class="yn-y">Ya</td><td class="yn-y">Ya</td><td class="wrap">Jumlah elemen yang cocok dengan selector sesuai.</td></tr>
+              <tr><td><code>assert_url</code></td><td class="yn-n">—</td><td class="yn-y">Ya</td><td class="wrap">URL halaman saat ini sesuai (mendukung regex).</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Visual, network, kualitas &amp; keamanan</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Aksi</th><th>Kategori</th><th>Keterangan</th></tr></thead>
+            <tbody>
+              <tr><td><code>assert_screenshot</code></td><td><span class="tag visual">visual</span></td><td class="wrap">Bandingkan tampilan dengan baseline (visual regression). Baseline dinamai per-OS oleh Playwright — lihat catatan di <a href="#visual-api">Visual &amp; API testing</a>.</td></tr>
+              <tr><td><code>assert_network_status</code></td><td><span class="tag network">network</span></td><td class="wrap">Status HTTP response tertentu sesuai ekspektasi.</td></tr>
+              <tr><td><code>assert_no_console_errors</code></td><td><span class="tag network">network</span></td><td class="wrap">Tidak ada error console sejak awal step atau sejak step sebelumnya.</td></tr>
+              <tr><td><code>assert_a11y</code></td><td><span class="tag quality">quality</span></td><td class="wrap">Gerbang aksesibilitas via axe-core, dengan opsi mengecualikan rule tertentu.</td></tr>
+              <tr><td><code>assert_performance</code></td><td><span class="tag quality">quality</span></td><td class="wrap">Anggaran performa, mis. <code class="inline">{"loadMs": 8000}</code>.</td></tr>
+              <tr><td><code>assert_security_headers</code></td><td><span class="tag security">security</span></td><td class="wrap">Header keamanan HTTP wajib ada, mis. <code class="inline">content-security-policy</code>.</td></tr>
+              <tr><td><code>api_request</code></td><td><span class="tag api">api</span></td><td class="wrap">Panggilan API langsung dengan assertion status/JSON-path.</td></tr>
+              <tr><td><code>mock_route</code></td><td><span class="tag network">network</span></td><td class="wrap">Mock response untuk pola URL tertentu (status, body, delay).</td></tr>
+              <tr><td><code>clear_mocks</code></td><td><span class="tag network">network</span></td><td class="wrap">Hapus semua mock route yang aktif.</td></tr>
+              <tr><td><code>use_flow</code></td><td><span class="tag flow">flow</span></td><td class="wrap">Panggil kumpulan langkah reusable (flow) yang didefinisikan sekali, dipakai berulang.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Wait</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Aksi</th><th>Keterangan</th></tr></thead>
+            <tbody>
+              <tr><td><code>wait</code></td><td class="wrap">Jeda tetap dalam milidetik.</td></tr>
+              <tr><td><code>wait_for_element_hidden</code></td><td class="wrap">Tunggu sampai elemen hilang/tersembunyi (mis. loading spinner).</td></tr>
+              <tr><td><code>wait_for_text</code></td><td class="wrap">Tunggu sampai teks tertentu muncul di halaman.</td></tr>
+              <tr><td><code>wait_for_url_change</code></td><td class="wrap">Tunggu sampai URL berubah dari nilai saat ini.</td></tr>
+              <tr><td><code>wait_for_network_idle</code></td><td class="wrap">Tunggu sampai tidak ada aktivitas network baru untuk periode singkat.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= DATASET ================= -->
+      <section class="doc-section" id="dataset">
+        <div class="section-eyebrow">06 · Menulis Test</div>
+        <h2>Dataset &amp; data dummy</h2>
+        <p>Tab <strong>Presets</strong> menyediakan dua cara mengisi test dengan data: variabel dummy siap pakai, dan dataset yang diimpor sendiri.</p>
+
+        <h3>Variabel data dummy</h3>
+        <p>Klik chip mana pun untuk menyalin placeholder-nya, lalu tempel ke kolom <strong>Value</strong> sebuah langkah <code class="inline">fill</code>. Placeholder digantikan dengan nilai realistis secara otomatis saat langkah dijalankan.</p>
+        <div class="badge-row">
+          <span class="badge">{{email}}</span><span class="badge">{{fullname}}</span><span class="badge">{{phone}}</span>
+          <span class="badge">{{nik}}</span><span class="badge">{{password}}</span><span class="badge">{{address}}</span>
+          <span class="badge">{{city}}</span><span class="badge">{{postcode}}</span><span class="badge">{{company}}</span>
+          <span class="badge">{{job_title}}</span><span class="badge">{{npwp}}</span><span class="badge">{{cc_visa}}</span>
+          <span class="badge">{{cc_master}}</span><span class="badge">{{cc_amex}}</span><span class="badge">{{price_idr}}</span>
+          <span class="badge">{{date_past}}</span><span class="badge">{{date_future}}</span><span class="badge">{{url}}</span>
+          <span class="badge">{{ip_v4}}</span><span class="badge">{{mac_address}}</span><span class="badge">{{uuid}}</span>
+          <span class="badge">{{lorem_ipsum}}</span><span class="badge">{{user_agent}}</span><span class="badge">{{timestamp}}</span>
+          <span class="badge">{{randomtext}}</span>
+        </div>
+        <p>Data Indonesia (NIK, NPWP, No. HP, alamat) dibuat mengikuti format yang valid secara struktur, untuk kebutuhan testing lokal.</p>
+
+        <h3>Mengimpor dataset (CSV/JSON)</h3>
+        <p>Klik ikon import di kartu Presets untuk mengunggah file <strong>CSV atau JSON</strong> berisi banyak baris data — setiap baris menjadi satu set nilai yang bisa dipakai lewat placeholder <code class="inline">{{nama_kolom}}</code> sesuai header kolomnya. Dataset mendukung hingga <strong>20.000 baris</strong>.</p>
+        <div class="callout warn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div class="callout-body">
+            <span class="callout-label">Peringatan</span>
+            <p>File <strong>Excel (.xlsx/.xls)</strong> bisa dipilih di dialog file, tapi belum diparse langsung — parser Excel di ekosistem npm punya kerentanan keamanan yang belum ditambal, sehingga sengaja tidak disertakan. Simpan/ekspor dulu sebagai <strong>CSV</strong> dari Excel atau Google Sheets ("Save As" / "File → Download → CSV"), lalu impor file CSV tersebut di sini.</p>
+          </div>
+        </div>
+        <p>Gunakan pemilih <strong>Environment</strong> dan <strong>Dataset aktif</strong> di atas kartu untuk berpindah antar konfigurasi tanpa mengedit langkah tes.</p>
+      </section>
+
+      <!-- ================= BULK ================= -->
+      <section class="doc-section" id="bulk">
+        <div class="section-eyebrow">07 · Menulis Test</div>
+        <h2>Input data massal (bulk data-entry)</h2>
+        <p>Untuk kasus nyata seperti "isi form ini untuk 500 baris data pelanggan dari spreadsheet": rekam satu alur (isi form → submit → verifikasi → buka form lagi) sebagai test case biasa, lalu jalankan otomatis untuk setiap baris dataset — mirip Google Forms yang menerima banyak submission berurutan.</p>
+
+        <h3>Cara pakai</h3>
+        <ol class="step-list">
+          <li><strong>Rekam satu siklus isi-form.</strong> <span>Gunakan placeholder <code class="inline">{{nama_kolom}}</code> pada langkah <code class="inline">fill</code> agar setiap baris dataset mengisi nilai yang berbeda. Sertakan langkah untuk membuka ulang form di akhir siklus.</span></li>
+          <li><strong>Impor dataset CSV/JSON.</strong> <span>Header kolom harus cocok dengan nama placeholder yang dipakai di langkah <code class="inline">fill</code>.</span></li>
+          <li><strong>Klik "Jalankan Semua Baris Dataset".</strong> <span>Tombol ini muncul di tab Presets begitu ada dataset aktif dengan baris data. (Alt+klik tombol <strong>Jalan</strong> di tab Builder adalah shortcut yang sama.)</span></li>
+          <li><strong>Pantau progres langsung.</strong> <span>Banner eksekusi menampilkan baris ke berapa yang sedang diproses dari total baris, tanpa harus menunggu semuanya selesai untuk tahu statusnya.</span></li>
+        </ol>
+
+        <div class="card-grid">
+          <div class="feature-card">
+            <h4>Lanjut walau gagal</h4>
+            <p>Satu baris gagal tidak menghentikan seluruh batch — semua baris tetap diproses, lalu ringkasan akhir memisahkan mana yang sukses dan mana yang gagal beserta nomor barisnya.</p>
+          </div>
+          <div class="feature-card">
+            <h4>Retry baris gagal</h4>
+            <p>Ringkasan akhir menawarkan tombol untuk menjalankan ulang <strong>hanya baris yang gagal</strong>, tanpa mengulang baris yang sudah sukses.</p>
+          </div>
+          <div class="feature-card">
+            <h4>Resume otomatis</h4>
+            <p>Jika batch terhenti (browser tertutup, koneksi putus, dsb.), checkpoint tersimpan otomatis. Saat dataset yang sama dijalankan lagi, sistem menawarkan melanjutkan dari baris terakhir yang belum selesai.</p>
+          </div>
+        </div>
+
+        <div class="callout tip">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/></svg>
+          <div class="callout-body">
+            <span class="callout-label">Tip</span>
+            <p>Minta <a href="#copilot">QA Copilot</a> membuatkan alur ini langsung: sebutkan nama form dan kolom-kolomnya, Copilot akan menyusun langkah dengan placeholder yang benar dan menyertakan langkah buka-ulang form di akhir — lihat bagian "Bulk data-entry" pada prompt sistemnya.</p>
+          </div>
+        </div>
+
+        <p>Tombol <strong>Stop</strong> di tab Builder menghentikan batch yang sedang berjalan kapan saja; baris yang sudah selesai tetap tercatat di checkpoint.</p>
+      </section>
+
+      <!-- ================= COPILOT ================= -->
+      <section class="doc-section" id="copilot">
+        <div class="section-eyebrow">08 · AI Copilot</div>
+        <h2>QA Copilot: chat &amp; generate test</h2>
+        <p>Tab Copilot adalah percakapan dengan AI (Gemini, Claude, atau DeepSeek — dikonfigurasi di <strong>AI Settings</strong>) yang memahami maksud Anda: membuat test case baru, menjawab pertanyaan seputar QA, atau mengerjakan tugas ahli seperti menyusun mock API atau laporan bug.</p>
+
+        <h3>Yang bisa diminta</h3>
+        <ul>
+          <li><strong>Generate test case</strong> — "Buatkan test login gagal dengan password salah" menghasilkan langkah-langkah siap pakai lengkap dengan assertion, ditampilkan sebagai kartu langkah yang bisa langsung disimpan.</li>
+          <li><strong>Test negatif &amp; boundary value</strong> — diminta secara eksplisit, Copilot menyusun skenario tepi (input kosong, karakter maksimal, format tidak valid) sebagai bagian dari kualitas test, bukan hanya jalur bahagia.</li>
+          <li><strong>Lampiran gambar/screenshot</strong> — kirim tangkapan layar sebuah halaman atau bug, Copilot membaca konteks visualnya.</li>
+          <li><strong>Tugas ahli (expert task)</strong> — mock API/page.route, menyusun laporan bug terstruktur, dan pertanyaan self-healing selector ditangani dengan prompt khusus yang lebih teknis.</li>
+        </ul>
+
+        <h3>Verifikasi selector otomatis</h3>
+        <p>Sebelum langkah hasil generate ditampilkan, Copilot memeriksa tiap selector terhadap halaman yang sedang aktif. Selector yang tidak ditemukan diberi badge peringatan ⚠️ pada kartu langkahnya, beserta ringkasan jumlah selector yang belum terverifikasi — sehingga Anda tahu langkah mana yang perlu dicek ulang sebelum menjalankan test, bukan menemukannya saat run gagal.</p>
+
+        <div class="callout note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+          <div class="callout-body">
+            <span class="callout-label">Catatan</span>
+            <p>Selector dengan sintaks khusus Playwright (mis. <code class="inline">:has-text()</code>) tidak bisa diperiksa lewat <code class="inline">querySelectorAll</code> native browser, sehingga dibiarkan tanpa badge — ini bukan berarti selector tersebut valid, hanya belum bisa diverifikasi otomatis.</p>
+          </div>
+        </div>
+
+        <h3>Format jawaban</h3>
+        <p>Jawaban percakapan (bukan kartu langkah) memakai format markdown lengkap: <strong>bold</strong> untuk istilah penting, <code class="inline">kode inline</code> untuk selector/nilai, daftar bernomor untuk urutan, dan kotak highlight bergaya <em>Note/Tip/Warning/Important</em> untuk poin yang perlu menonjol — bukan lagi paragraf teks polos.</p>
+      </section>
+
+      <!-- ================= PLAN MODE ================= -->
+      <section class="doc-section" id="plan-mode">
+        <div class="section-eyebrow">09 · AI Copilot</div>
+        <h2>Plan Mode: diskusi dulu, eksekusi kemudian</h2>
+        <p>Toggle <strong>Plan</strong> di tab Copilot mengubah alur permintaan test-generation menjadi dua tahap: AI menjelaskan <em>rencana</em> pengujian dalam bahasa biasa terlebih dahulu, dan baru menyusun langkah nyata setelah Anda menyetujuinya secara eksplisit.</p>
+
+        <h3>Alurnya</h3>
+        <ol class="step-list">
+          <li><strong>Aktifkan Plan Mode.</strong> <span>Nyalakan toggle <strong>Plan</strong> di header tab Copilot.</span></li>
+          <li><strong>Minta sebuah test.</strong> <span>Contoh: "Buatkan test case checkout dengan kupon diskon."</span></li>
+          <li><strong>Baca rencananya.</strong> <span>AI menjawab dalam bentuk diskusi murni — skenario apa yang akan dicakup, asumsi apa yang dipakai — tanpa langsung membuat langkah tes.</span></li>
+          <li><strong>Konfirmasi untuk eksekusi.</strong> <span>Balas dengan konfirmasi singkat seperti <em>"Ya, lanjutkan"</em>, <em>"oke"</em>, atau <em>"jalankan"</em> — barulah langkah tes nyata dibuat dan ditampilkan sebagai kartu langkah.</span></li>
+        </ol>
+
+        <div class="callout important">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+          <div class="callout-body">
+            <span class="callout-label">Penting</span>
+            <p>Jika Anda ingin mengubah arah rencana sebelum eksekusi, balas dengan revisi (bukan kata konfirmasi) — mis. <em>"tambahkan juga skenario kupon kedaluwarsa"</em> — Copilot akan menyesuaikan rencana dan menunggu konfirmasi lagi, bukan langsung mengeksekusi rencana lama.</p>
+          </div>
+        </div>
+
+        <p>Plan Mode berlaku khusus untuk permintaan pembuatan test; pertanyaan pengetahuan QA umum tetap dijawab langsung tanpa tahap rencana.</p>
+      </section>
+
+      <!-- ================= AGENT ================= -->
+      <section class="doc-section" id="agent">
+        <div class="section-eyebrow">10 · AI Copilot</div>
+        <h2>AI Sharing Agent: eksplorasi otonom</h2>
+        <p>Toggle <strong>Agent</strong> di tab Copilot memberi AI kendali langsung atas halaman aktif. Alih-alih hanya menulis langkah dari deskripsi Anda, agent benar-benar <strong>membaca DOM halaman, mengklik, mengisi form, dan memverifikasi hasilnya</strong> — lalu menyerahkan test case jadi di akhir sesi.</p>
+
+        <h3>Cara berpikir agent</h3>
+        <p>Setiap iterasi mengikuti kerangka kerja QA engineer manusia: <strong>amati</strong> keadaan halaman → <strong>ambil aksi</strong> → <strong>verifikasi</strong> apakah hasilnya benar-benar berubah seperti yang diharapkan → jika gagal, <strong>diagnosis akar masalah</strong> (bukan mengulang aksi yang sama) → sebelum menyatakan selesai, <strong>cek ulang</strong> apakah tujuan pengujian benar-benar tercapai.</p>
+
+        <div class="card-grid">
+          <div class="feature-card">
+            <h4>Piercing iframe &amp; shadow DOM</h4>
+            <p>Agent membaca elemen di dalam iframe same-origin dan shadow root terbuka — termasuk popup login/register yang dirender lewat kerangka framework modern, bukan hanya dokumen teratas.</p>
+          </div>
+          <div class="feature-card">
+            <h4>Deteksi konteks halaman</h4>
+            <p>Mengenali popup/modal, elemen disabled, indikator loading/skeleton, dan proteksi CAPTCHA/bot sebelum memutuskan aksi berikutnya.</p>
+          </div>
+          <div class="feature-card">
+            <h4>Navigasi browser asli</h4>
+            <p>"Kembali" dan "maju" memakai riwayat navigasi browser asli (<code class="inline">chrome.tabs.goBack/goForward</code>), bukan simulasi JavaScript — sehingga berperilaku identik dengan pengguna sungguhan menekan tombol back/forward.</p>
+          </div>
+          <div class="feature-card">
+            <h4>Anti-repeat &amp; self-check</h4>
+            <p>Jika agent mengulang aksi identik, ia mendapat teguran korektif sebelum berhenti paksa. Sebelum menyatakan "selesai" tanpa satu pun langkah verifikasi, agent dipaksa melakukan satu iterasi pengecekan tambahan.</p>
+          </div>
+        </div>
+
+        <h3>Hasil akhir sebuah sesi</h3>
+        <p>Setelah agent menyatakan selesai (maksimal 35 iterasi), Anda menerima:</p>
+        <ul>
+          <li>Test case lengkap — siap disimpan sebagai suite atau dijalankan langsung.</li>
+          <li>Jika agent menemukan bug selama eksplorasi: laporan bug terstruktur (lihat <a href="#bug-exporter">Bug Exporter</a>) dengan expected/actual/severity terisi, bukan teks generik.</li>
+        </ul>
+
+        <div class="callout warn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div class="callout-body">
+            <span class="callout-label">Peringatan</span>
+            <p>Sebagai gerbang keamanan, agent selalu meminta konfirmasi Anda sebelum mengklik elemen yang berpotensi merusak data — tombol hapus/delete/remove, atau logout/keluar — sehingga halaman yang disusupi prompt-injection tidak bisa memaksa agent menghapus data atau keluar dari sesi diam-diam.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= VISUAL/API ================= -->
+      <section class="doc-section" id="visual-api">
+        <div class="section-eyebrow">11 · Kualitas &amp; Pelaporan</div>
+        <h2>Visual, API &amp; quality gate testing</h2>
+
+        <h3>Visual regression</h3>
+        <p>Langkah <code class="inline">assert_screenshot</code> membandingkan tangkapan layar saat ini dengan baseline tersimpan, dengan ambang batas perbedaan piksel yang bisa diatur (<code class="inline">QA_VISUAL_THRESHOLD</code>, default <code class="inline">0.01</code>).</p>
+        <div class="callout warn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div class="callout-body">
+            <span class="callout-label">Batasan yang perlu diketahui</span>
+            <p>Playwright menamai file baseline per sistem operasi (mis. akhiran <code class="inline">-win32.png</code>). Baseline yang dibuat di Windows <strong>tidak bisa dipakai apa adanya</strong> di runner CI berbasis Linux. Suite visual regression contoh karena itu dikecualikan dari loop "jalankan semua suite" di CI — tetap divalidasi skema dan gerbang keamanannya, tapi dijalankan manual/lokal saja.</p>
+          </div>
+        </div>
+
+        <h3>API testing</h3>
+        <p>Langkah <code class="inline">api_request</code> memanggil endpoint secara langsung (tanpa lewat UI) dan memeriksa status code serta nilai pada path JSON tertentu di body response — cocok untuk memvalidasi kontrak API secara terpisah dari UI.</p>
+
+        <h3>Network mocking</h3>
+        <p>Langkah <code class="inline">mock_route</code> mengganti response untuk pola URL tertentu (status, body, delay buatan) sehingga skenario seperti "server API lambat" atau "endpoint mengembalikan 500" bisa diuji tanpa bergantung pada backend sungguhan. <code class="inline">clear_mocks</code> mengembalikan semua rute ke perilaku aslinya.</p>
+
+        <h3>Gerbang kualitas</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Aksi</th><th>Contoh value</th><th>Keterangan</th></tr></thead>
+            <tbody>
+              <tr><td><code>assert_performance</code></td><td><code class="inline">{"loadMs": 8000}</code></td><td class="wrap">Gagal jika waktu muat halaman melewati anggaran.</td></tr>
+              <tr><td><code>assert_security_headers</code></td><td><code class="inline">{"required": ["content-security-policy"]}</code></td><td class="wrap">Gagal jika header keamanan wajib tidak dikirim server.</td></tr>
+              <tr><td><code>assert_a11y</code></td><td><code class="inline">{"disabledRules": ["region"]}</code></td><td class="wrap">Gerbang aksesibilitas axe-core; rule tertentu bisa dinonaktifkan jika memang tidak relevan untuk halaman tersebut.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= MONITOR ================= -->
+      <section class="doc-section" id="monitor">
+        <div class="section-eyebrow">12 · Kualitas &amp; Pelaporan</div>
+        <h2>Live log monitor</h2>
+        <p>Tab <strong>Monitor</strong> menampilkan log console dan aktivitas network dari tab yang sedang aktif secara real-time, tanpa harus membuka DevTools.</p>
+        <ul>
+          <li><strong>Filter log</strong> — Semua / Console / Network.</li>
+          <li><strong>Filter network</strong> — berdasarkan method (Semua, Gagal, POST, PUT/PATCH, DELETE), status, tipe, dan domain.</li>
+          <li><strong>Tangkap body</strong> — opsi merekam isi request/response, berguna saat menyusun assertion <code class="inline">assert_network_status</code> atau memverifikasi payload API.</li>
+        </ul>
+      </section>
+
+      <!-- ================= READINESS ================= -->
+      <section class="doc-section" id="readiness">
+        <div class="section-eyebrow">13 · Kualitas &amp; Pelaporan</div>
+        <h2>QA Readiness &amp; governance</h2>
+        <p>Kartu QA Readiness (tab Reports) mengumpulkan seluruh siklus hidup kualitas dalam satu tempat, dengan jejak audit yang tersimpan bersama export suite JSON — tidak butuh sistem eksternal untuk proyek kecil-menengah.</p>
+
+        <div class="card-grid">
+          <div class="feature-card"><h4>Requirements</h4><p>Definisikan requirement dan hubungkan ke langkah tes untuk traceability requirement-ke-test.</p></div>
+          <div class="feature-card"><h4>Tambah defect / Defect board</h4><p>Catat defect dan pantau siklus hidupnya di papan kanban ringkas.</p></div>
+          <div class="feature-card"><h4>Exploratory session</h4><p>Catat sesi eksplorasi manual (charter, catatan, temuan) di luar test case terstruktur.</p></div>
+          <div class="feature-card"><h4>Cetak Sign-off</h4><p>Hasilkan dokumen release sign-off berdasarkan status requirement, defect, dan hasil eksekusi terbaru.</p></div>
+          <div class="feature-card"><h4>Riwayat versi</h4><p>Lihat riwayat revisi suite dari waktu ke waktu.</p></div>
+          <div class="feature-card"><h4>Backup workspace</h4><p>Ekspor seluruh state kerja sebagai cadangan yang bisa dipulihkan.</p></div>
+        </div>
+
+        <p>Semua catatan governance memakai jejak audit berantai-hash (hash-chained) sehingga riwayat tidak bisa diubah diam-diam tanpa terdeteksi.</p>
+      </section>
+
+      <!-- ================= BUG EXPORTER ================= -->
+      <section class="doc-section" id="bug-exporter">
+        <div class="section-eyebrow">14 · Kualitas &amp; Pelaporan</div>
+        <h2>Bug Exporter</h2>
+        <p>Ekspor laporan bug satu klik ke lima tujuan, lengkap dengan konteks langkah reproduksi, tanpa menyalin-tempel manual ke masing-masing tool.</p>
+        <div class="badge-row">
+          <span class="badge">Slack</span><span class="badge">Teams</span><span class="badge">GitHub</span>
+          <span class="badge">Linear</span><span class="badge">Jira</span>
+        </div>
+
+        <h3>Mengatur tujuan export</h3>
+        <ul>
+          <li><strong>Slack / Teams</strong> — masukkan URL Incoming Webhook masing-masing workspace.</li>
+          <li><strong>GitHub / Linear</strong> — hubungkan lewat token/endpoint yang relevan untuk membuat issue langsung.</li>
+          <li><strong>Jira</strong> — integrasi paling lengkap: isi <strong>Site URL</strong>, <strong>Email akun</strong>, dan <strong>API Token</strong>, lalu <strong>Test Connection</strong> untuk memverifikasi sebelum memilih Project, Issue Type, Priority, dan Labels.</li>
+        </ul>
+
+        <p>Judul laporan bisa diisi manual, atau — jika laporan berasal dari sesi <a href="#agent">AI Sharing Agent</a> — sudah terisi otomatis dengan expected/actual behaviour dan tingkat keparahan berdasarkan apa yang ditemukan agent selama eksplorasi.</p>
+
+        <div class="callout tip">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/></svg>
+          <div class="callout-body">
+            <span class="callout-label">Tip</span>
+            <p><strong>Rewind 30s Video Bug</strong> (menu QA Readiness) memotong 30 detik terakhir dari rekaman video sesi sebagai bukti visual singkat, siap dilampirkan ke laporan bug yang sama.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= LAPORAN ================= -->
+      <section class="doc-section" id="laporan">
+        <div class="section-eyebrow">15 · Kualitas &amp; Pelaporan</div>
+        <h2>Laporan &amp; riwayat eksekusi</h2>
+        <p>Tab Reports menyimpan <strong>hingga 20 riwayat eksekusi terakhir</strong> beserta metrik total/passed/failed/status per run, riwayat video recording, serta kartu <strong>Export &amp; Report Suite</strong> untuk mengekspor suite JSON siap dipakai CLI runner atau CI.</p>
+        <p>Untuk laporan yang dihasilkan CLI runner (bukan dari dalam ekstensi), lihat folder <code class="inline">artifacts/</code> setelah menjalankan <code class="inline">npm run qa:run</code> — berisi laporan HTML interaktif, JUnit XML untuk integrasi CI, JSON mentah, serta dashboard tren dan skor flaky test jika dikonfigurasi.</p>
+      </section>
+
+      <!-- ================= CLI/CI ================= -->
+      <section class="doc-section" id="cli-ci">
+        <div class="section-eyebrow">16 · Otomasi &amp; CI</div>
+        <h2>CLI runner &amp; CI/CD</h2>
+
+        <h3>Perintah CLI</h3>
+        <pre><span class="cm"># cek sintaks semua modul</span>
+npm run check
+
+<span class="cm"># unit test</span>
+npm test
+
+<span class="cm"># e2e: boot ekstensi asli di Chromium</span>
+node --test tests/extension/extension.test.mjs
+
+<span class="cm"># validasi suite terhadap skema JSON</span>
+npm run qa:validate -- suites/nama-suite.json
+
+<span class="cm"># gerbang keamanan: secret, HTTP tidak aman, dependency</span>
+npm run qa:security
+
+<span class="cm"># jalankan suite</span>
+npm run qa:run -- suites/nama-suite.json
+
+<span class="cm"># siapkan storage-state login yang bisa dipakai ulang</span>
+npm run qa:auth</pre>
+
+        <h3>Variabel lingkungan CI</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Variabel</th><th>Fungsi</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td><code>QA_BASE_URL</code></td><td class="wrap">Mengganti base URL suite.</td><td>base URL suite</td></tr>
+              <tr><td><code>QA_BROWSER</code></td><td class="wrap">Browser target.</td><td><code>chromium</code></td></tr>
+              <tr><td><code>QA_DEVICE</code></td><td class="wrap">Nama device Playwright (emulasi mobile/tablet).</td><td>viewport desktop</td></tr>
+              <tr><td><code>QA_WORKERS</code></td><td class="wrap">Jumlah worker paralel.</td><td>1 lokal, 2 CI</td></tr>
+              <tr><td><code>QA_RETRIES</code></td><td class="wrap">Jumlah retry test gagal.</td><td>0 lokal, 2 CI</td></tr>
+              <tr><td><code>QA_TAGS</code></td><td class="wrap">Filter suite berdasarkan tag, dipisah koma.</td><td>semua suite</td></tr>
+              <tr><td><code>QA_STORAGE_STATE</code></td><td class="wrap">Path JSON state autentikasi.</td><td>tidak ada</td></tr>
+              <tr><td><code>QA_STORAGE_STATES</code></td><td class="wrap">Matriks JSON role-ke-storage-state untuk multi-role testing.</td><td>tidak ada</td></tr>
+              <tr><td><code>QA_ALLOW_PRIVATE_NETWORK</code></td><td class="wrap">Izinkan target API privat tepercaya secara eksplisit di CI.</td><td><code>false</code></td></tr>
+              <tr><td><code>QA_VAR_*</code></td><td class="wrap">Variabel secret/runtime, mis. <code>QA_VAR_PASSWORD_SECRET</code> untuk placeholder <code>{{password_secret}}</code> tanpa menulis secret ke suite yang diekspor.</td><td>tidak ada</td></tr>
+              <tr><td><code>QA_UPDATE_SNAPSHOTS</code></td><td class="wrap">Setujui baseline visual baru.</td><td><code>false</code></td></tr>
+              <tr><td><code>QA_VISUAL_THRESHOLD</code></td><td class="wrap">Ambang batas rasio piksel berbeda yang diizinkan.</td><td><code>0.01</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>GitHub Actions</h3>
+        <p><code class="inline">.github/workflows/ci.yml</code> menjalankan dua job berurutan setiap push/PR:</p>
+        <ul>
+          <li><strong>quality</strong> — checkout, setup Node 20, <code class="inline">npm ci</code>, <code class="inline">npm run check</code>, <code class="inline">npm test</code>, validasi skema semua suite, dan gerbang keamanan untuk tiap suite.</li>
+          <li><strong>e2e</strong> (butuh <em>quality</em> lulus) — pasang Chromium Playwright, jalankan test e2e ekstensi, lalu jalankan setiap suite di <code class="inline">suites/</code> kecuali <code class="inline">visual-regression.json</code> (dikecualikan karena keterbatasan baseline per-OS di atas). Artefak diunggah meski job gagal.</li>
+        </ul>
+      </section>
+
+      <!-- ================= KEAMANAN ================= -->
+      <section class="doc-section" id="keamanan">
+        <div class="section-eyebrow">17 · Otomasi &amp; CI</div>
+        <h2>Catatan keamanan</h2>
+        <ul>
+          <li><strong>Kunci API lokal-only</strong> — kunci provider AI tersimpan di storage khusus <code class="inline">qa_ai_settings</code> dan tidak pernah ikut dalam payload sinkronisasi cloud.</li>
+          <li><strong>Redaksi cloud</strong> — kredensial dalam thread Copilot, session secret, dan pengaturan video di-redact sebelum dikirim ke cloud (jika sinkronisasi Supabase diaktifkan).</li>
+          <li><strong>Pertahanan prompt-injection</strong> — DOM yang di-scrape dibungkus sebagai konteks tidak tepercaya; model diinstruksikan mengabaikan teks halaman sebagai instruksi.</li>
+          <li><strong>Network aman</strong> — <code class="inline">secureFetch</code> memblokir target jaringan privat kecuali diizinkan eksplisit; target redirect divalidasi.</li>
+          <li><strong>Ingestion langkah yang dikeraskan</strong> — langkah hasil AI divalidasi terhadap kontrak aksi bersama, di side panel maupun di background worker.</li>
+          <li><strong>Gerbang keamanan agent</strong> — AI Sharing Agent meminta konfirmasi sebelum mengklik elemen destruktif (delete/remove/logout/keluar/...).</li>
+          <li><strong>Tanpa <code class="inline">eval</code>/<code class="inline">new Function</code></strong> — seluruh konten user/AI melewati <code class="inline">escapeHTML</code>/escaping markdown sebelum masuk <code class="inline">innerHTML</code>.</li>
+        </ul>
+      </section>
+
+      <!-- ================= PINTASAN ================= -->
+      <section class="doc-section" id="pintasan">
+        <div class="section-eyebrow">18 · Otomasi &amp; CI</div>
+        <h2>Pintasan keyboard</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Pintasan</th><th>Aksi</th></tr></thead>
+            <tbody>
+              <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">R</span> <span style="color:var(--ink-faint)">(macOS: <span class="kbd">⌘</span>+<span class="kbd">Shift</span>+<span class="kbd">R</span>)</span></td><td>Mulai/hentikan rekaman.</td></tr>
+              <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">P</span> <span style="color:var(--ink-faint)">(macOS: <span class="kbd">⌘</span>+<span class="kbd">Shift</span>+<span class="kbd">P</span>)</span></td><td>Jalankan suite tes aktif.</td></tr>
+              <tr><td><strong>Alt</strong> + klik tombol <strong>Jalan</strong></td><td>Shortcut untuk "Jalankan Semua Baris Dataset" tanpa berpindah ke tab Presets.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="doc-footer">
+        <p>QA Flow Master Pro v4.4.0 — dokumentasi ini mengikuti struktur fitur yang ada di kode sumber saat ditulis. Untuk detail teknis lanjutan (pola suite JSON, hook <code class="inline">beforeEach</code>/<code class="inline">afterEach</code>, multi-browser project), lihat <code class="inline">docs/expert-guide.md</code>.</p>
+        <a class="to-top" href="#ringkasan">↑ Kembali ke atas</a>
+      </footer>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.nav-link'));
+    var sections = links
+      .map(function (l) { return document.getElementById(l.getAttribute('href').slice(1)); })
+      .filter(Boolean);
+
+    function setActive(id) {
+      links.forEach(function (l) {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+      });
+    }
+
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) setActive(entry.target.id);
+        });
+      }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+      sections.forEach(function (s) { observer.observe(s); });
+    }
+
+    links.forEach(function (l) {
+      l.addEventListener('click', function () { setActive(l.getAttribute('href').slice(1)); });
+    });
+  })();
+</script>
+</body>
+</html>

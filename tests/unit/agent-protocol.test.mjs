@@ -52,9 +52,39 @@ test('isTerminalAction only true for done', () => {
 
 test('agentToolDocs exposes the tool vocabulary', () => {
   const docs = ctx.agentToolDocs();
-  for (const tool of ['click', 'fill', 'select', 'wait', 'done']) {
+  for (const tool of ['click', 'fill', 'select', 'hover', 'press', 'read', 'go_back', 'go_forward', 'wait', 'done']) {
     assert.match(docs, new RegExp(tool), `tool docs must mention ${tool}`);
   }
+});
+
+test('done tool doc documents the optional structured "bugs" field', () => {
+  const docs = ctx.agentToolDocs();
+  assert.match(docs, /"bugs"/);
+  assert.match(docs, /severity/i);
+});
+
+test('parseAgentAction preserves a structured "bugs" array on the done action', () => {
+  const done = ctx.parseAgentAction('{"tool":"done","summary":"Selesai","steps":[],"bugs":[{"title":"Submit gagal","errorMsg":"500","severity":"HIGH"}]}');
+  assert.equal(done.tool, 'done');
+  assert.equal(done.bugs.length, 1);
+  assert.equal(done.bugs[0].severity, 'HIGH');
+});
+
+test('parseAgentAction accepts the exploration/scraping tools (hover, press, read, go_back)', () => {
+  const hover = ctx.parseAgentAction('{"tool":"hover","selector":"#menu"}');
+  assert.equal(hover.tool, 'hover');
+  const press = ctx.parseAgentAction('{"tool":"press","selector":"#search","value":"Enter"}');
+  assert.equal(press.tool, 'press');
+  assert.equal(press.value, 'Enter');
+  const pressNoSelector = ctx.parseAgentAction('{"tool":"press","value":"Enter"}');
+  assert.equal(pressNoSelector.tool, 'press');
+  assert.equal(pressNoSelector.selector, undefined);
+  const read = ctx.parseAgentAction('{"tool":"read","selector":".result-item"}');
+  assert.equal(read.tool, 'read');
+  const goBack = ctx.parseAgentAction('{"tool":"go_back"}');
+  assert.equal(goBack.tool, 'go_back');
+  const goForward = ctx.parseAgentAction('{"tool":"go_forward"}');
+  assert.equal(goForward.tool, 'go_forward');
 });
 
 test('isDestructiveLabel flags destructive actions but not safe ones', () => {

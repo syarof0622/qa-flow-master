@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 2,
+  "environment": { "name": "Public QA sandbox", "baseUrl": "https://the-internet.herokuapp.com", "variables": {} },
+  "dataset": { "name": "Default", "rows": [{}] },
+  "suite": {
+    "name": "Network Mocking - page.route Interception",
+    "description": "Demonstrates mock_route intercepting a real, guaranteed-to-load asset request (the site's shared stylesheet) with a controlled status code, verified via assert_network_status on a follow-up same-site navigation, then clear_mocks to remove the interception.",
+    "owner": "QA Automation",
+    "priority": "P2",
+    "tags": ["network", "mocking", "ci"],
+    "startUrl": "{{baseUrl}}/",
+    "beforeEach": [],
+    "steps": [
+      {
+        "id": "mock-app-css",
+        "action": "mock_route",
+        "selector": "**/css/app.css",
+        "value": "{\"status\":299,\"body\":\"/* mocked by QA Flow */\",\"headers\":{\"content-type\":\"text/css\"}}",
+        "description": "Mock request stylesheet situs dengan status kontrol 299",
+        "enabled": true,
+        "timeout": 10000
+      },
+      {
+        "id": "navigate-login",
+        "action": "click",
+        "selector": "a[href='/login']",
+        "value": "",
+        "description": "Navigasi ke halaman lain di situs yang sama (memicu request CSS baru)",
+        "enabled": true,
+        "timeout": 10000
+      },
+      {
+        "id": "assert-mocked-status",
+        "action": "assert_network_status",
+        "selector": "app.css",
+        "value": "299",
+        "description": "Verifikasi request stylesheet benar-benar dicegat oleh mock (status 299, bukan 200 asli)",
+        "enabled": true,
+        "timeout": 10000
+      },
+      {
+        "id": "clear-the-mock",
+        "action": "clear_mocks",
+        "selector": "",
+        "value": "",
+        "description": "Hapus semua interception yang aktif",
+        "enabled": true,
+        "timeout": 10000
+      }
+    ],
+    "afterEach": []
+  }
+}

@@ -98,6 +98,9 @@ const QADataGenerator = {
   },
 
   getUUID() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
       const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
@@ -159,34 +162,37 @@ const QADataGenerator = {
   interpolate(template) {
     if (typeof template !== 'string') return template;
     
-    // Evaluate math expressions in template if needed (e.g. {{random_int}})
-    return template
-      .replace(/\{\{email\}\}/gi, () => this.getEmail())
-      .replace(/\{\{fullname\}\}/gi, () => this.getFullName())
-      .replace(/\{\{phone\}\}/gi, () => this.getPhone())
-      .replace(/\{\{address\}\}/gi, () => this.getAddress())
-      .replace(/\{\{city\}\}/gi, () => this.getCity())
-      .replace(/\{\{company\}\}/gi, () => this.getCompany())
-      .replace(/\{\{job_title\}\}/gi, () => this.getJobTitle())
-      .replace(/\{\{npwp\}\}/gi, () => this.getNPWP())
-      .replace(/\{\{nik\}\}/gi, () => this.getNIK())
-      .replace(/\{\{password\}\}/gi, () => this.getPassword())
-      .replace(/\{\{cc_visa\}\}/gi, () => this.getCreditCard('visa'))
-      .replace(/\{\{cc_master\}\}/gi, () => this.getCreditCard('mastercard'))
-      .replace(/\{\{cc_amex\}\}/gi, () => this.getCreditCard('amex'))
-      .replace(/\{\{postcode\}\}/gi, () => this.getPostcode())
-      .replace(/\{\{uuid\}\}/gi, () => this.getUUID())
-      .replace(/\{\{ip_v4\}\}/gi, () => this.getIPAddress(false))
-      .replace(/\{\{ip_v6\}\}/gi, () => this.getIPAddress(true))
-      .replace(/\{\{mac_address\}\}/gi, () => this.getMacAddress())
-      .replace(/\{\{url\}\}/gi, () => this.getURL())
-      .replace(/\{\{price_idr\}\}/gi, () => this.getCurrencyIDR())
-      .replace(/\{\{date_past\}\}/gi, () => this.getDate('past'))
-      .replace(/\{\{date_future\}\}/gi, () => this.getDate('future'))
-      .replace(/\{\{lorem_ipsum\}\}/gi, () => this.getLoremIpsum())
-      .replace(/\{\{user_agent\}\}/gi, () => this.getUserAgent())
-      .replace(/\{\{randomtext\}\}/gi, () => this.getRandomText(8))
-      .replace(/\{\{timestamp\}\}/gi, () => new Date().toISOString());
+    return template.replace(/\{\{([a-z0-9_]+)\}\}/gi, (match, tag) => {
+      switch (tag.toLowerCase()) {
+        case 'email': return this.getEmail();
+        case 'fullname': return this.getFullName();
+        case 'phone': return this.getPhone();
+        case 'address': return this.getAddress();
+        case 'city': return this.getCity();
+        case 'company': return this.getCompany();
+        case 'job_title': return this.getJobTitle();
+        case 'npwp': return this.getNPWP();
+        case 'nik': return this.getNIK();
+        case 'password': return this.getPassword();
+        case 'cc_visa': return this.getCreditCard('visa');
+        case 'cc_master': return this.getCreditCard('mastercard');
+        case 'cc_amex': return this.getCreditCard('amex');
+        case 'postcode': return this.getPostcode();
+        case 'uuid': return this.getUUID();
+        case 'ip_v4': return this.getIPAddress(false);
+        case 'ip_v6': return this.getIPAddress(true);
+        case 'mac_address': return this.getMacAddress();
+        case 'url': return this.getURL();
+        case 'price_idr': return String(this.getCurrencyIDR());
+        case 'date_past': return this.getDate('past');
+        case 'date_future': return this.getDate('future');
+        case 'lorem_ipsum': return this.getLoremIpsum();
+        case 'user_agent': return this.getUserAgent();
+        case 'randomtext': return this.getRandomText(8);
+        case 'timestamp': return new Date().toISOString();
+        default: return match; // Biarkan jika tidak dikenali
+      }
+    });
   }
 };
 

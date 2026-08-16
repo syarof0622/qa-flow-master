@@ -53,6 +53,9 @@
         case 'fill': s += `  await ${scope}.locator(${sel}).fill(${val});\n`; break;
         case 'select': s += `  await ${scope}.locator(${sel}).selectOption(${val});\n`; break;
         case 'hover': s += `  await ${scope}.locator(${sel}).hover();\n`; break;
+        case 'press': s += step.selector ? `  await ${scope}.locator(${sel}).press(${jsLiteral(step.value || 'Enter')});\n` : `  await page.keyboard.press(${jsLiteral(step.value || 'Enter')});\n`; break;
+        case 'go_back': s += `  await page.goBack({ waitUntil: 'domcontentloaded' });\n`; break;
+        case 'go_forward': s += `  await page.goForward({ waitUntil: 'domcontentloaded' });\n`; break;
         case 'assert_visible': s += `  await expect(${scope}.locator(${sel})).toBeVisible();\n`; break;
         case 'assert_enabled': s += `  await expect(${scope}.locator(${sel})).toBeEnabled();\n`; break;
         case 'assert_disabled': s += `  await expect(${scope}.locator(${sel})).toBeDisabled();\n`; break;
@@ -117,6 +120,8 @@
         case 'assert_url': s += `    cy.url().should('include', ${val});\n`; break;
         case 'wait': s += `    cy.wait(${Math.max(0, Math.min(60000, parseInt(step.value, 10) || 1000))});\n`; break;
         case 'wait_for_element_hidden': s += `    cy.get(${sel}).should('not.be.visible');\n`; break;
+        case 'go_back': s += `    cy.go('back');\n`; break;
+        case 'go_forward': s += `    cy.go('forward');\n`; break;
       }
       s += '\n';
     });

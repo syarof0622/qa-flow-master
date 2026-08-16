@@ -1,6 +1,20 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="1.277045">
-<testsuite name="qa-flow.spec.mjs" timestamp="2026-08-11T04:04:53.478Z" hostname="chromium" tests="1" failures="0" skipped="0" time="0.467" errors="0">
-<testcase name="QA Flow Smoke › QA Flow Smoke" classname="qa-flow.spec.mjs" time="0.467">
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="4.087129999999999">
+<testsuite name="qa-flow.spec.mjs" timestamp="2026-08-16T10:46:47.681Z" hostname="chromium" tests="1" failures="0" skipped="0" time="1.77" errors="0">
+<testcase name="Visual Regression - Screenshot Baseline › Visual Regression - Screenshot Baseline" classname="qa-flow.spec.mjs" time="1.77">
+<system-out>
+<![CDATA[A snapshot doesn't exist at C:\Users\AnisNurSafarina\Documents\Browser Ex\qa-flow-master\qa-flow-master\tests\qa-flow.spec.mjs-snapshots\assert-homepage-screenshot-chromium-win32.png, writing actual.
+
+[[ATTACHMENT|..\tests\qa-flow.spec.mjs-snapshots\assert-homepage-screenshot-chromium-win32.png]]
+
+[[ATTACHMENT|test-results\qa-flow-Visual-Regression--698d2-ssion---Screenshot-Baseline-chromium\assert-homepage-screenshot-actual.png]]
+
+[[ATTACHMENT|test-results\qa-flow-Visual-Regression--698d2-ssion---Screenshot-Baseline-chromium\test-finished-1.png]]
+
+[[ATTACHMENT|test-results\qa-flow-Visual-Regression--698d2-ssion---Screenshot-Baseline-chromium\video.webm]]
+
+[[ATTACHMENT|test-results\qa-flow-Visual-Regression--698d2-ssion---Screenshot-Baseline-chromium\trace.zip]]
+]]>
+</system-out>
 </testcase>
 </testsuite>
 </testsuites>

@@ -1,4 +1,7 @@
 window.QAMarkdown = (() => {
+  // Self-contained on purpose: this parser module keeps its own tiny escapeHTML
+  // so it stays portable and extensible — reusable outside the sidepanel (e.g.
+  // in a Node/CLI context) without depending on the shared global scope.
   function escapeHTML(str) {
     if (!str) return '';
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -41,9 +44,13 @@ window.QAMarkdown = (() => {
     if (!text) return '';
     let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     
+    // Restore escaped HTML for the raw code so clipboard gets the real characters
+    const unescapeHTML = (str) => str.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+    
     // Code blocks
     html = html.replace(/```(\w*)[ \t\r]*\n([\s\S]*?)```/g, (m, lang, code) => {
-      const encodedCode = btoa(unescape(encodeURIComponent(code)));
+      const rawCode = unescapeHTML(code);
+      const encodedCode = btoa(unescape(encodeURIComponent(rawCode)));
       const highlighted = highlightJSCode(code);
       return `<div class="bento-code-card">
         <div class="bento-mac-header">
@@ -149,7 +156,14 @@ window.QAMarkdown = (() => {
           result.push(`</${listType}>`);
           inList = false;
         }
-        if (line && !line.startsWith('<div') && !line.startsWith('<table') && !line.startsWith('<blockquote') && !line.startsWith('</div')) {
+        
+        // Horizontal Rules
+        if (line === '---' || line === '***' || line === '___') {
+          result.push('<hr class="bento-chat-divider">');
+          continue;
+        }
+
+        if (line && !line.startsWith('<div') && !line.startsWith('<table') && !line.startsWith('<blockquote') && !line.startsWith('</div') && !line.startsWith('<hr')) {
           result.push(`<p class="bento-chat-p">${line}</p>`);
         } else if (line) {
           result.push(line);

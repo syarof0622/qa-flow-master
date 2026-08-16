@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 2,
+  "environment": { "name": "Public QA sandbox", "baseUrl": "https://the-internet.herokuapp.com", "variables": {} },
+  "dataset": { "name": "Default", "rows": [{}] },
+  "suite": {
+    "name": "Dynamic Content - Async Loading",
+    "description": "Demonstrates the wait_for_* vocabulary against a real AJAX-style loading spinner: click Start, wait for the spinner to disappear, then assert the revealed content instead of guessing a fixed delay.",
+    "owner": "QA Automation",
+    "priority": "P1",
+    "tags": ["dynamic-content", "waits", "ci"],
+    "startUrl": "{{baseUrl}}/dynamic_loading/1",
+    "beforeEach": [],
+    "steps": [
+      { "id": "assert-start-visible", "action": "assert_visible", "selector": "#start button", "value": "", "description": "Tombol Start terlihat", "enabled": true, "timeout": 10000 },
+      { "id": "click-start", "action": "click", "selector": "#start button", "value": "", "description": "Klik tombol Start", "enabled": true, "timeout": 10000 },
+      { "id": "wait-loading-gone", "action": "wait_for_element_hidden", "selector": "#loading", "value": "8000", "description": "Tunggu indikator loading hilang (bukan delay tetap)", "enabled": true, "timeout": 8000 },
+      { "id": "assert-finish-visible", "action": "assert_visible", "selector": "#finish", "value": "", "description": "Konten yang di-load muncul", "enabled": true, "timeout": 10000 },
+      { "id": "assert-finish-text", "action": "assert_text", "selector": "#finish", "value": "Hello World!", "description": "Isi konten sesuai harapan", "enabled": true, "timeout": 10000 }
+    ],
+    "afterEach": []
+  }
+}

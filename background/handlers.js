@@ -43,6 +43,20 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
       sendResponse({ status: 'SUCCESS' });
       break;
 
+    case 'SYNC_COPILOT_THREADS':
+      // Receive copilot threads from sidepanel and inject them into appState
+      // so they can be seamlessly synced to Supabase.
+      if (Array.isArray(payload?.threads)) {
+        appState.copilotThreads = payload.threads;
+        if (payload.activeId !== undefined) {
+          appState.activeCopilotThreadId = payload.activeId;
+        }
+        // Force state save, which triggers the debounce for Supabase sync
+        saveState();
+      }
+      sendResponse({ status: 'SUCCESS' });
+      break;
+
     case 'GET_STATE':
       sendResponse({ status: 'SUCCESS', data: getAppState() });
       break;
@@ -547,7 +561,7 @@ function qaHandleMessage(action, payload, sender, sendResponse) {
       const dataset = {
         id: payload.dataset?.id || `dataset_${Date.now()}`,
         name: String(payload.dataset?.name || 'Dataset').slice(0, 80),
-        rows: Array.isArray(payload.dataset?.rows) ? payload.dataset.rows.slice(0, 1000).map(row => row && typeof row === 'object' ? row : {}) : []
+        rows: Array.isArray(payload.dataset?.rows) ? payload.dataset.rows.slice(0, 20000).map(row => row && typeof row === 'object' ? row : {}) : []
       };
       qaState.data.saveDataset(dataset);
       saveState();

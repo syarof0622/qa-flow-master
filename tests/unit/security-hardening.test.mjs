@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
-import path from 'node:path';
 import test from 'node:test';
 
 const read = file => readFile(new URL(`../../${file}`, import.meta.url), 'utf8');
@@ -11,7 +10,9 @@ const readBackground = async () => {
   const parts = [await read('background.js')];
   const modDir = new URL('../../background/', import.meta.url);
   const files = (await readdir(modDir)).filter(f => f.endsWith('.js')).sort();
-  for (const f of files) parts.push(await readFile(path.join(modDir.pathname, f), 'utf8'));
+  // Resolve against modDir (not path.join on modDir.pathname) - on Windows a
+  // file:// URL pathname looks like "/C:/Users/...", which path.join mangles.
+  for (const f of files) parts.push(await readFile(new URL(f, modDir), 'utf8'));
   return parts.join('\n');
 };
 
@@ -21,7 +22,7 @@ const readSidepanel = async () => {
   const parts = [await read('sidepanel.js')];
   const modDir = new URL('../../sidepanel/', import.meta.url);
   const files = (await readdir(modDir)).filter(f => f.endsWith('.js')).sort();
-  for (const f of files) parts.push(await readFile(path.join(modDir.pathname, f), 'utf8'));
+  for (const f of files) parts.push(await readFile(new URL(f, modDir), 'utf8'));
   return parts.join('\n');
 };
 

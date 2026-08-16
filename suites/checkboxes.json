@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 2,
+  "environment": { "name": "Public QA sandbox", "baseUrl": "https://the-internet.herokuapp.com", "variables": {} },
+  "dataset": { "name": "Default", "rows": [{}] },
+  "suite": {
+    "name": "Checkboxes - Form Controls",
+    "description": "Demonstrates assert_checked/assert_unchecked against real checkbox controls with no default value, then toggles one and re-verifies.",
+    "owner": "QA Automation",
+    "priority": "P2",
+    "tags": ["form-controls", "ci"],
+    "startUrl": "{{baseUrl}}/checkboxes",
+    "beforeEach": [],
+    "steps": [
+      { "id": "assert-cb1-unchecked", "action": "assert_unchecked", "selector": "#checkboxes input:nth-of-type(1)", "value": "", "description": "Checkbox 1 tidak tercentang secara default", "enabled": true, "timeout": 10000 },
+      { "id": "assert-cb2-checked", "action": "assert_checked", "selector": "#checkboxes input:nth-of-type(2)", "value": "", "description": "Checkbox 2 tercentang secara default", "enabled": true, "timeout": 10000 },
+      { "id": "click-cb1", "action": "click", "selector": "#checkboxes input:nth-of-type(1)", "value": "", "description": "Centang checkbox 1", "enabled": true, "timeout": 10000 },
+      { "id": "assert-cb1-now-checked", "action": "assert_checked", "selector": "#checkboxes input:nth-of-type(1)", "value": "", "description": "Checkbox 1 kini tercentang setelah diklik", "enabled": true, "timeout": 10000 }
+    ],
+    "afterEach": []
+  }
+}

@@ -1,13 +1,14 @@
 {
   "config": {
     "argv": [
-      "/usr/local/bin/node",
-      "/Users/macbook/.gemini/antigravity/scratch/qa-flow-master/node_modules/@playwright/test/cli.js",
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\Users\\AnisNurSafarina\\Documents\\Browser Ex\\qa-flow-master\\qa-flow-master\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "--config=playwright.config.mjs"
+      "--config=playwright.config.mjs",
+      "--update-snapshots"
     ],
-    "configFile": "/Users/macbook/.gemini/antigravity/scratch/qa-flow-master/playwright.config.mjs",
-    "rootDir": "/Users/macbook/.gemini/antigravity/scratch/qa-flow-master/tests",
+    "configFile": "C:\\Users\\AnisNurSafarina\\Documents\\Browser Ex\\qa-flow-master\\qa-flow-master\\playwright.config.mjs",
+    "rootDir": "C:/Users/AnisNurSafarina/Documents/Browser Ex/qa-flow-master/qa-flow-master/tests",
     "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
@@ -23,7 +24,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "/Users/macbook/.gemini/antigravity/scratch/qa-flow-master/artifacts/test-results",
+        "outputDir": "C:/Users/AnisNurSafarina/Documents/Browser Ex/qa-flow-master/qa-flow-master/artifacts/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -31,7 +32,7 @@
         },
         "id": "chromium",
         "name": "chromium",
-        "testDir": "/Users/macbook/.gemini/antigravity/scratch/qa-flow-master/tests",
+        "testDir": "C:/Users/AnisNurSafarina/Documents/Browser Ex/qa-flow-master/qa-flow-master/tests",
         "testIgnore": [],
         "testMatch": [
           "qa-flow.spec.mjs"
@@ -65,7 +66,7 @@
         }
       ],
       [
-        "/Users/macbook/.gemini/antigravity/scratch/qa-flow-master/runner/reporters/quality-reporter.mjs",
+        "C:\\Users\\AnisNurSafarina\\Documents\\Browser Ex\\qa-flow-master\\qa-flow-master\\runner\\reporters\\quality-reporter.mjs",
         null
       ]
     ],
@@ -75,7 +76,7 @@
     },
     "shard": null,
     "tags": [],
-    "updateSnapshots": "missing",
+    "updateSnapshots": "changed",
     "updateSourceMethod": "patch",
     "version": "1.62.1",
     "workers": 1,
@@ -90,13 +91,13 @@
       "specs": [],
       "suites": [
         {
-          "title": "QA Flow Smoke",
+          "title": "Visual Regression - Screenshot Baseline",
           "file": "qa-flow.spec.mjs",
-          "line": 16,
+          "line": 18,
           "column": 6,
           "specs": [
             {
-              "title": "QA Flow Smoke",
+              "title": "Visual Regression - Screenshot Baseline",
               "ok": true,
               "tags": [],
               "tests": [
@@ -111,36 +112,62 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 467,
+                      "duration": 1770,
                       "errors": [],
-                      "stdout": [],
+                      "stdout": [
+                        {
+                          "text": "A snapshot doesn't exist at C:\\Users\\AnisNurSafarina\\Documents\\Browser Ex\\qa-flow-master\\qa-flow-master\\tests\\qa-flow.spec.mjs-snapshots\\assert-homepage-screenshot-chromium-win32.png, writing actual.\n"
+                        }
+                      ],
                       "stderr": [],
                       "retry": 0,
                       "steps": [
                         {
                           "title": "Open https://example.com",
-                          "duration": 166
+                          "duration": 569
                         },
                         {
-                          "title": "Test 1: Example heading is visible",
-                          "duration": 28
-                        },
-                        {
-                          "title": "Test 2: Heading content is correct",
-                          "duration": 7
+                          "title": "Test 1: Tampilan halaman sesuai baseline visual (toleransi 5%)",
+                          "duration": 524
                         }
                       ],
-                      "startTime": "2026-08-11T04:04:53.872Z",
+                      "startTime": "2026-08-16T10:46:49.032Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "assert-homepage-screenshot-expected.png",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\AnisNurSafarina\\Documents\\Browser Ex\\qa-flow-master\\qa-flow-master\\tests\\qa-flow.spec.mjs-snapshots\\assert-homepage-screenshot-chromium-win32.png"
+                        },
+                        {
+                          "name": "assert-homepage-screenshot-actual.png",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\AnisNurSafarina\\Documents\\Browser Ex\\qa-flow-master\\qa-flow-master\\artifacts\\test-results\\qa-flow-Visual-Regression--698d2-ssion---Screenshot-Baseline-chromium\\assert-homepage-screenshot-actual.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\AnisNurSafarina\\Documents\\Browser Ex\\qa-flow-master\\qa-flow-master\\artifacts\\test-results\\qa-flow-Visual-Regression--698d2-ssion---Screenshot-Baseline-chromium\\test-finished-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Users\\AnisNurSafarina\\Documents\\Browser Ex\\qa-flow-master\\qa-flow-master\\artifacts\\test-results\\qa-flow-Visual-Regression--698d2-ssion---Screenshot-Baseline-chromium\\video.webm"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\AnisNurSafarina\\Documents\\Browser Ex\\qa-flow-master\\qa-flow-master\\artifacts\\test-results\\qa-flow-Visual-Regression--698d2-ssion---Screenshot-Baseline-chromium\\trace.zip"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
                 }
               ],
-              "id": "81bccb6576da86fa94d0-c5e5b6aa04b81096a8e3",
+              "id": "81bccb6576da86fa94d0-d32cb97c14faa6b52672",
               "file": "qa-flow.spec.mjs",
-              "line": 19,
+              "line": 21,
               "column": 5
             }
           ]
@@ -150,8 +177,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-11T04:04:53.361Z",
-    "duration": 1277.045,
+    "startTime": "2026-08-16T10:46:47.293Z",
+    "duration": 4087.1299999999997,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,

@@ -39,7 +39,7 @@ test('Gemini request builds correct endpoint, payload, and parses reply', async 
   assert.match(body.contents[0].parts[0].text, /BEGIN_UNTRUSTED_CONTEXT/);
   assert.match(body.contents[0].parts[0].text, /DOM CONTEXT/);
   assert.match(body.contents[0].parts[0].text, /t\.md/);
-  assert.equal(body.generationConfig.maxOutputTokens, 4096);
+  assert.equal(body.generationConfig.maxOutputTokens, 8192);
 });
 
 test('Gemini attaches base64 images as inlineData', async () => {
@@ -64,7 +64,7 @@ test('Claude request sends x-api-key and parses content', async () => {
   assert.equal(options.headers['anthropic-version'], '2023-06-01');
   const body = JSON.parse(options.body);
   assert.equal(body.model, 'claude-3-haiku-20240307');
-  assert.equal(body.max_tokens, 2048);
+  assert.equal(body.max_tokens, 4096);
   assert.equal(body.system, 'SYSTEM');
   assert.equal(body.messages[0].role, 'user');
   assert.match(body.messages[0].content[0].text, /PROMPT/);
@@ -91,7 +91,7 @@ test('DeepSeek request sends Bearer auth and max_tokens, parses choices', async 
   assert.equal(options.headers['Authorization'], 'Bearer DSKEY');
   const body = JSON.parse(options.body);
   assert.equal(body.model, 'deepseek-chat');
-  assert.equal(body.max_tokens, 2048, 'DeepSeek must send max_tokens');
+  assert.equal(body.max_tokens, 4096, 'DeepSeek must send max_tokens');
   assert.equal(body.messages[0].role, 'system');
   assert.equal(body.messages[0].content, 'SYSTEM');
   assert.equal(body.messages[1].role, 'user');

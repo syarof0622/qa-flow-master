@@ -1,4 +1,4 @@
-// background.js - QA Flow Master Pro v4.3 Service Worker (ROUTER)
+// background.js - QA Flow Master Pro v4.4 Service Worker (ROUTER)
 // Modular entry: loads per-domain modules via importScripts, then wires the
 // message router, lifecycle listeners, keyboard shortcuts, and init.
 //
@@ -30,7 +30,7 @@ chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => 
 // INITIALIZATION
 // ========================================
 chrome.runtime.onInstalled.addListener(() => {
-  console.log("QA Flow Master Pro v4.3 installed.");
+  console.log("QA Flow Master Pro v4.4 installed.");
   chrome.storage.local.get('appState', (data) => {
     if (!data.appState || !data.appState.suites || !data.appState.suites.length) {
       const defaultSuite = createSuiteObject('Proyek QA Default');

@@ -25,7 +25,7 @@
         <div class="brand-text">
           <h1>QA Flow Master</h1>
           <div class="header-sub-row">
-            <span class="version-tag">PRO v4.3</span>
+            <span class="version-tag">PRO v4.4</span>
           </div>
         </div>
       </div>
@@ -42,8 +42,12 @@
           aria-label="Ubah bahasa ke English">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+            <path d="m5 8 6 6"/>
+            <path d="m4 14 6-6 2-3"/>
+            <path d="M2 5h12"/>
+            <path d="M7 2h1"/>
+            <path d="m22 22-5-10-5 10"/>
+            <path d="M14 18h6"/>
           </svg>
         </button>
         <button id="btnThemeToggle" class="bento-theme-toggle-btn" title="Ganti Mode Terang/Gelap"
@@ -317,6 +321,9 @@
                 <option value="fill">Fill Input</option>
                 <option value="select">Select Dropdown</option>
                 <option value="hover">Hover / Mouseover</option>
+                <option value="press">Press Keyboard Key</option>
+                <option value="go_back">Go Back (Browser)</option>
+                <option value="go_forward">Go Forward (Browser)</option>
                 <option value="assert_visible">Assert Visible</option>
                 <option value="assert_enabled">Assert Enabled</option>
                 <option value="assert_disabled">Assert Disabled</option>
@@ -438,13 +445,14 @@
                   <path d="M17 19h4" />
                 </svg>
               </button>
-              <label class="bento-icon-btn dataset-import-btn" title="Import dataset"
+              <label class="bento-icon-btn dataset-import-btn"
+                title="Import dataset JSON/CSV. File Excel? Save As / Export ke CSV dulu di Excel atau Google Sheets, lalu import CSV-nya di sini."
                 aria-label="Import dataset JSON atau CSV">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 3v12m-4-4 4 4 4-4" />
                   <path d="M4 19h16" />
                 </svg>
-                <input id="datasetInput" class="hidden" type="file" accept=".json,.csv,application/json,text/csv">
+                <input id="datasetInput" class="hidden" type="file" accept=".json,.csv,.xlsx,.xls,application/json,text/csv">
               </label>
             </div>
           </div>
@@ -454,6 +462,15 @@
               <option value="">Tanpa dataset</option>
             </select>
           </div>
+          <button id="btnRunAllRows" class="bento-btn bento-btn-outline bento-full-width hidden" type="button"
+            title="Jalankan suite aktif berulang untuk setiap baris dataset (isi form → submit → buka form lagi), lanjut walau ada baris yang gagal, dengan progres baris berjalan.">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none" />
+              <path d="M21 3v6h-6" />
+            </svg>
+            <span id="btnRunAllRowsLabel">Jalankan Semua Baris Dataset</span>
+          </button>
           <p class="card-subtitle">Klik chip untuk menyalin variabel. Pasang di value step tes.</p>
 
           <div class="bento-preset-grid">
@@ -842,6 +859,11 @@
                 Ready</span>
             </div>
             <div class="copilot-header-top-actions">
+              <label class="agent-mode-toggle" id="planModeToggleWrap" title="Plan Mode: AI berdiskusi &amp; mengajukan rencana dulu, baru eksekusi setelah kamu konfirmasi" aria-label="Plan Mode: diskusi dulu sebelum eksekusi">
+                <span class="agent-mode-label">Plan</span>
+                <input type="checkbox" id="planModeToggle" class="agent-mode-checkbox">
+                <span class="agent-mode-switch" aria-hidden="true"></span>
+              </label>
               <label class="agent-mode-toggle" id="agentModeToggleWrap" title="AI Sharing Agent" aria-label="AI Sharing Agent: jelajahi halaman otomatis">
                 <span class="agent-mode-label">Agent</span>
                 <input type="checkbox" id="agentModeToggle" class="agent-mode-checkbox">
@@ -901,6 +923,12 @@
                 ini?</div>
             </div>
           </div>
+          <button id="btnScrollToBottom" class="copilot-scroll-bottom-btn hidden" title="Scroll ke bawah" aria-label="Scroll ke chat terakhir">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14"></path>
+              <path d="M19 12l-7 7-7-7"></path>
+            </svg>
+          </button>
           <div id="copilotAttachmentContainer" class="copilot-attachment-container hidden"></div>
           <div class="copilot-input-area">
             <input type="file" id="copilotFileInput" accept=".txt,.json,.csv,.md,.doc,.docx,.pdf,image/*" multiple

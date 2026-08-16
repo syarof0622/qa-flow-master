@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "environment": { "name": "Public demo", "baseUrl": "https://example.com", "variables": {} },
+  "dataset": { "name": "Default", "rows": [{}] },
+  "suite": {
+    "name": "Quality Gates - Performance & Security Headers",
+    "description": "Demonstrates assert_performance (page-load budget from real Navigation Timing) and assert_security_headers (HEAD-request header audit against a real, well-secured target) - two quality-gate action types no other example suite exercises.",
+    "owner": "QA Automation",
+    "priority": "P2",
+    "tags": ["quality", "performance", "security", "ci"],
+    "startUrl": "{{baseUrl}}",
+    "beforeEach": [],
+    "steps": [
+      {
+        "id": "assert-load-budget",
+        "action": "assert_performance",
+        "selector": "",
+        "value": "{\"loadMs\":8000}",
+        "description": "Halaman termuat dalam batas wajar (budget generus untuk stabilitas CI)",
+        "enabled": true,
+        "timeout": 15000
+      },
+      {
+        "id": "assert-security-headers",
+        "action": "assert_security_headers",
+        "selector": "https://github.com",
+        "value": "{\"required\":[\"content-security-policy\",\"x-content-type-options\",\"referrer-policy\"]}",
+        "description": "Situs referensi (github.com) mengirim header keamanan inti yang diharapkan",
+        "enabled": true,
+        "timeout": 10000
+      }
+    ],
+    "afterEach": []
+  }
+}

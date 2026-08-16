@@ -113,7 +113,7 @@ async function runTestSuite(tabId, delayBetweenSteps = 500, stopOnError = true, 
         if (!await waitForControl()) return finishCancelled();
         attempts++;
         const resolvedStep = resolveStepVariables(step);
-        if (['assert_no_console_errors', 'assert_network_status', 'assert_screenshot', 'assert_security_headers', 'api_request'].includes(step.action)) {
+        if (['assert_no_console_errors', 'assert_network_status', 'assert_screenshot', 'assert_security_headers', 'api_request', 'go_back', 'go_forward'].includes(step.action)) {
           stepResult = await executeBackgroundAssertion(resolvedStep, tabId);
         } else {
           stepResult = await sendStepCommandToTab(tabId, resolvedStep, {
@@ -246,6 +246,36 @@ function resolveStepVariables(step) {
 async function executeBackgroundAssertion(step, tabId) {
   const start = Date.now();
   if (step.action === 'api_request') return executeApiRequestStep(step, start);
+  if (step.action === 'go_back' || step.action === 'go_forward') {
+    // Real browser tab navigation (chrome.tabs API), not a page-JS
+    // window.history.back()/forward() call - the latter can be intercepted or
+    // overridden by SPA routers (pushState apps often swallow popstate), so it
+    // is not reliably "browser-compatible" the way this is.
+    try {
+      const before = await chrome.tabs.get(tabId);
+      if (step.action === 'go_back') await chrome.tabs.goBack(tabId);
+      else await chrome.tabs.goForward(tabId);
+      const timeout = Math.max(250, Math.min(60000, parseInt(step.timeout, 10) || 8000));
+      const deadline = Date.now() + timeout;
+      let finalUrl = before.url;
+      let status = before.status;
+      while (Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 150));
+        const tab = await chrome.tabs.get(tabId).catch(() => null);
+        if (!tab) break;
+        finalUrl = tab.url;
+        status = tab.status;
+        if (status === 'complete' && finalUrl !== before.url) break;
+      }
+      if (finalUrl === before.url) {
+        const direction = step.action === 'go_back' ? 'sebelumnya' : 'selanjutnya';
+        return { success: false, error: `URL tidak berubah setelah ${step.action} - kemungkinan tidak ada riwayat halaman ${direction} pada tab ini.`, expected: 'URL berubah', actual: finalUrl, duration: Date.now() - start };
+      }
+      return { success: true, actual: finalUrl, duration: Date.now() - start };
+    } catch (error) {
+      return { success: false, error: `Navigasi ${step.action === 'go_back' ? 'kembali' : 'maju'} gagal: ${error.message}`, duration: Date.now() - start };
+    }
+  }
   if (step.action === 'assert_security_headers') {
     try {
       const config = step.value ? JSON.parse(step.value) : {};

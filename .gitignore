@@ -5,8 +5,7 @@ node_modules/
 test-results/
 playwright-report/
 blob-report/
-artifacts/test-results/
-artifacts/html-report/
+artifacts/
 
 # Auth storage state (protected secrets — never commit)
 auth/

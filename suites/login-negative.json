@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 2,
+  "environment": { "name": "Public QA sandbox", "baseUrl": "https://the-internet.herokuapp.com", "variables": {} },
+  "dataset": {
+    "name": "Invalid credential variants",
+    "rows": [
+      { "user": "wronguser", "loginPwd": "wrongpass", "expectedError": "Your username is invalid!" },
+      { "user": "tomsmith", "loginPwd": "wrongpass", "expectedError": "Your password is invalid!" }
+    ]
+  },
+  "suite": {
+    "name": "Login - Negative & Validation",
+    "description": "Negative-test scenario (the pattern the AI Copilot's negative-test prompt targets): submit invalid credentials and verify the app rejects them with the correct error message and does NOT navigate away from /login.",
+    "owner": "QA Automation",
+    "priority": "P1",
+    "tags": ["form", "login", "negative", "ci"],
+    "startUrl": "{{baseUrl}}/login",
+    "beforeEach": [],
+    "steps": [
+      { "id": "fill-username", "action": "fill", "selector": "#username", "value": "{{user}}", "description": "Isi username tidak valid", "enabled": true, "timeout": 10000 },
+      { "id": "fill-password", "action": "fill", "selector": "#password", "value": "{{loginPwd}}", "description": "Isi password", "enabled": true, "timeout": 10000 },
+      { "id": "submit-login", "action": "click", "selector": "button[type='submit']", "value": "", "description": "Klik tombol Login", "enabled": true, "timeout": 10000 },
+      { "id": "assert-stays-on-login", "action": "assert_url", "selector": "", "value": "/login", "description": "Tetap di halaman login (tidak redirect)", "enabled": true, "timeout": 10000 },
+      { "id": "assert-error-flash", "action": "assert_text", "selector": "#flash-messages", "value": "{{expectedError}}", "description": "Pesan error yang sesuai tampil", "enabled": true, "timeout": 10000 }
+    ],
+    "afterEach": []
+  }
+}

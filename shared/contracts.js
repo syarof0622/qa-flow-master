@@ -8,7 +8,7 @@
     'APPLY_MOCK_CONFIG', 'PAGE_LOG_EVENT', 'PAUSE_EXECUTION', 'RECORDED_STEP', 'RENAME_SUITE', 'RESTORE_SUITE_REVISION',
     'RESTORE_WORKSPACE_BACKUP', 'RESUME_EXECUTION', 'RUN_COPILOT_STEPS', 'RUN_TEST_SUITE', 'SAVE_AI_SETTINGS', 'SAVE_COPILOT_THREAD', 'SAVE_DATASET', 'SAVE_ENVIRONMENT', 'SAVE_RUN_OPTIONS', 'SAVE_VIDEO_SETTINGS',
     'SET_ACTIVE_COPILOT_THREAD', 'SET_ACTIVE_DATASET', 'SET_ACTIVE_ENVIRONMENT', 'SET_MONITOR_OPTIONS', 'SET_SESSION_SECRETS', 'START_RECORDING', 'STOP_EXECUTION',
-    'STOP_MONITOR', 'STOP_RECORDING', 'SWITCH_SUITE', 'UPDATE_STEPS', 'UPDATE_SUITE_METADATA', 'UPDATE_SUITE_TAGS', 'UPSERT_DEFECT'
+    'STOP_MONITOR', 'STOP_RECORDING', 'SWITCH_SUITE', 'SYNC_COPILOT_THREADS', 'UPDATE_STEPS', 'UPDATE_SUITE_METADATA', 'UPDATE_SUITE_TAGS', 'UPSERT_DEFECT'
   ]);
   const actionSet = new Set(actions);
   const mutationActions = new Set(['CREATE_SUITE', 'RENAME_SUITE', 'DUPLICATE_SUITE', 'DELETE_SUITE', 'UPDATE_STEPS', 'APPEND_STEPS', 'CLEAR_STEPS', 'IMPORT_SUITE_DOCUMENT', 'UPDATE_SUITE_METADATA', 'SAVE_ENVIRONMENT', 'SAVE_DATASET', 'SAVE_AI_SETTINGS', 'RESTORE_SUITE_REVISION', 'RESTORE_WORKSPACE_BACKUP', 'APPROVE_VISUAL_BASELINE']);
@@ -16,7 +16,7 @@
   // ACTION_NAMES so the renderer allowlist, background validation, and the Playwright
   // engine all agree on one vocabulary.
   const stepActions = Object.freeze([
-    'click', 'fill', 'select', 'hover',
+    'click', 'fill', 'select', 'hover', 'press', 'go_back', 'go_forward',
     'assert_visible', 'assert_enabled', 'assert_disabled', 'assert_checked', 'assert_unchecked',
     'assert_text', 'assert_value', 'assert_attribute', 'assert_css', 'assert_count', 'assert_url',
     'assert_screenshot', 'assert_network_status', 'assert_no_console_errors', 'assert_a11y', 'assert_performance', 'assert_security_headers',

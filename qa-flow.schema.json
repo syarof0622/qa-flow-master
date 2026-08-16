@@ -13,7 +13,7 @@
       "properties": {
         "id": { "type": "string", "maxLength": 200 },
         "action": {
-          "enum": ["click", "fill", "select", "hover", "assert_visible", "assert_enabled", "assert_disabled", "assert_checked", "assert_unchecked", "assert_text", "assert_value", "assert_attribute", "assert_css", "assert_count", "assert_url", "assert_screenshot", "assert_network_status", "assert_no_console_errors", "assert_a11y", "assert_performance", "assert_security_headers", "api_request", "mock_route", "clear_mocks", "use_flow", "wait", "wait_for_element_hidden", "wait_for_text", "wait_for_url_change", "wait_for_network_idle"]
+          "enum": ["click", "fill", "select", "hover", "press", "go_back", "go_forward", "assert_visible", "assert_enabled", "assert_disabled", "assert_checked", "assert_unchecked", "assert_text", "assert_value", "assert_attribute", "assert_css", "assert_count", "assert_url", "assert_screenshot", "assert_network_status", "assert_no_console_errors", "assert_a11y", "assert_performance", "assert_security_headers", "api_request", "mock_route", "clear_mocks", "use_flow", "wait", "wait_for_element_hidden", "wait_for_text", "wait_for_url_change", "wait_for_network_idle"]
         },
         "selector": { "type": "string", "maxLength": 5000 },
         "fallbackSelectors": { "type": "array", "maxItems": 8, "items": { "type": "string", "maxLength": 5000 } },
@@ -71,7 +71,7 @@
       "required": ["rows"],
       "properties": {
         "name": { "type": "string", "maxLength": 80 },
-        "rows": { "type": "array", "minItems": 1, "maxItems": 1000, "items": { "type": "object" } }
+        "rows": { "type": "array", "minItems": 1, "maxItems": 20000, "items": { "type": "object" } }
       }
     },
     "suite": {

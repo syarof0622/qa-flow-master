@@ -1,4 +1,4 @@
-# QA Flow Master Pro 4.3
+# QA Flow Master Pro 4.4
 
 Chrome recorder plus a production Playwright automation runner. A suite recorded in the extension can be exported, schema-validated, executed against datasets, and used as a CI quality gate.
 
@@ -78,7 +78,7 @@ sidepanel/*.js         qa-copilot, ai-agent, ai-settings, video-settings, record
 shared/                contracts.js (message/step contract), ai-client.js
 css/*.css              Bento design system (11 partials) imported by sidepanel.css
 runner/                CLI/CI runner: validate-suite, security-gate, qa-flow-runner, lib/
-suites/                Example suite (smoke.json)
+suites/                Example suites: smoke, login (positive/negative), dynamic content, checkboxes, dropdown, hover/reusable-flows, network mocking, API contract, quality gates (perf/security headers), accessibility, visual regression (local-only, see suite description)
 tests/unit             Node unit tests (contracts, security, codegen, qaState, ai-client, module-paths)
 tests/extension        Chromium e2e tests (boots the real unpacked extension)
 tests/qa-flow.spec.mjs Playwright engine implementing every registered action

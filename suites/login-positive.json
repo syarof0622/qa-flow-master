@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 2,
+  "environment": { "name": "Public QA sandbox", "baseUrl": "https://the-internet.herokuapp.com", "variables": {} },
+  "dataset": { "name": "Default", "rows": [{}] },
+  "suite": {
+    "name": "Login - Happy Path",
+    "description": "Positive form-interaction scenario: fill valid credentials, submit, verify redirect and success message. Demonstrates fill/click/assert_url/assert_text/assert_visible against a real login form.",
+    "owner": "QA Automation",
+    "priority": "P0",
+    "tags": ["form", "login", "positive", "ci"],
+    "startUrl": "{{baseUrl}}/login",
+    "beforeEach": [],
+    "steps": [
+      { "id": "assert-login-heading", "action": "assert_visible", "selector": "h2", "value": "", "description": "Halaman login tampil", "enabled": true, "timeout": 10000 },
+      { "id": "fill-username", "action": "fill", "selector": "#username", "value": "tomsmith", "description": "Isi username valid", "enabled": true, "timeout": 10000 },
+      { "id": "fill-password", "action": "fill", "selector": "#password", "value": "SuperSecretPassword!", "description": "Isi password valid", "enabled": true, "timeout": 10000 },
+      { "id": "submit-login", "action": "click", "selector": "button[type='submit']", "value": "", "description": "Klik tombol Login", "enabled": true, "timeout": 10000 },
+      { "id": "assert-redirect", "action": "assert_url", "selector": "", "value": "/secure", "description": "Redirect ke halaman /secure", "enabled": true, "timeout": 10000 },
+      { "id": "assert-success-flash", "action": "assert_text", "selector": "#flash-messages", "value": "You logged into a secure area", "description": "Pesan sukses tampil", "enabled": true, "timeout": 10000 }
+    ],
+    "afterEach": []
+  }
+}

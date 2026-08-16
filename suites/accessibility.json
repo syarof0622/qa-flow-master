@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 2,
+  "environment": { "name": "Public demo", "baseUrl": "https://example.com", "variables": {} },
+  "dataset": { "name": "Default", "rows": [{}] },
+  "suite": {
+    "name": "Accessibility - WCAG Audit",
+    "description": "Demonstrates assert_a11y (axe-core WCAG audit). landmark-one-main/region are disabled because they flag missing <main>/ARIA-region structure on a single static paragraph page with no navigation - a real best-practice note but not a genuine barrier here; every other WCAG 2.1 A/AA rule must still report zero violations.",
+    "owner": "QA Automation",
+    "priority": "P2",
+    "tags": ["accessibility", "ci"],
+    "startUrl": "{{baseUrl}}",
+    "beforeEach": [],
+    "steps": [
+      {
+        "id": "audit-a11y",
+        "action": "assert_a11y",
+        "selector": "",
+        "value": "{\"rules\":{\"landmark-one-main\":{\"enabled\":false},\"region\":{\"enabled\":false}}}",
+        "description": "Audit WCAG - nol pelanggaran (di luar 2 rule struktural yang dikecualikan)",
+        "enabled": true,
+        "timeout": 10000
+      }
+    ],
+    "afterEach": []
+  }
+}

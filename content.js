@@ -1,4 +1,4 @@
-// content.js - QA Flow Master Pro v4.3 DOM Engine
+// content.js - QA Flow Master Pro v4.4 DOM Engine
 // Features: Advanced Wait Conditions (P1), Step Notes, Performance Threshold, a11y Audit, Clean State
 
 (function () {
@@ -124,38 +124,112 @@
           selectSummaries.push(`Selector "${selId}": options=[${opts}]`);
         });
 
-        // 4. Extract Interactive Elements & Selectors
+        // 4. Extract Interactive Elements & Selectors. Recurse into same-origin
+        // iframes/open shadow roots too - a Register/Login form is very often a
+        // shared auth widget embedded that way, and without this it would never
+        // appear here at all even though EXECUTE_STEP (querySelectorDeep) can
+        // already reach and click it once given a matching selector.
         const interactiveList = [];
-        document.querySelectorAll('button, input, select, textarea, a, [role], form, [data-testid], h1, h2, h3, h4, [class*="btn"], [class*="card"]').forEach((el, idx) => {
-          if (idx > 200) return;
-          const tag = el.tagName.toLowerCase();
-          const type = el.getAttribute('type') || '';
-          const id = el.id ? `#${el.id}` : '';
-          const name = el.getAttribute('name') ? `[name="${el.getAttribute('name')}"]` : '';
-          const testId = el.getAttribute('data-testid') ? `[data-testid="${el.getAttribute('data-testid')}"]` : '';
-          const placeholder = el.getAttribute('placeholder') ? `(placeholder: "${el.getAttribute('placeholder')}")` : '';
-          const label = (el.labels?.[0]?.textContent || el.getAttribute('aria-label') || el.innerText || el.value || '').trim().replace(/\s+/g, ' ').slice(0, 50);
-          
-          let selector = id || testId || (name ? `${tag}${name}` : '');
-          if (!selector && el.className && typeof el.className === 'string') {
-            const cleanClasses = el.className.split(' ').filter(c => c && !c.startsWith('__qa') && !c.includes(':')).slice(0, 2).join('.');
-            if (cleanClasses) selector = `${tag}.${cleanClasses}`;
-          }
-          if (!selector) {
-            if (label && ['button', 'a', 'h1', 'h2', 'h3', 'h4', 'span'].includes(tag)) {
-              selector = `${tag}:has-text("${label.slice(0, 25)}")`;
-            } else {
-              selector = tag;
+        let interactiveCount = 0;
+        let iframeScanCount = 0;
+        const POPUP_SELECTOR_QC = '[role="dialog"], [role="alertdialog"], [aria-modal="true"], .modal, .modal-dialog, .modal-content, .popup, .popover, .dialog, [data-modal], [data-dialog], .drawer, [class*="modal" i], [class*="dialog" i], [class*="popup" i], [class*="overlay" i]';
+        function scanInteractiveRoot(root, vw, vh, frameNote) {
+          if (interactiveCount > 200) return;
+          const elementFromPoint = (x, y) => (typeof root.elementFromPoint === 'function' ? root.elementFromPoint(x, y) : null);
+          root.querySelectorAll('button, input, select, textarea, a, [role], form, [data-testid], h1, h2, h3, h4, [class*="btn"], [class*="card"]').forEach((el) => {
+            if (interactiveCount > 200) return;
+            const rect = el.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+            const view = el.ownerDocument?.defaultView || window;
+            const style = view.getComputedStyle(el);
+            if (style.opacity === '0' || style.visibility === 'hidden' || style.display === 'none') return;
+            // Only expose elements actually on top at their center point, so a
+            // "Register" button hidden behind an open popup is never offered as
+            // clickable alongside the real one inside the popup.
+            const cx = rect.x + rect.width / 2;
+            const cy = rect.y + rect.height / 2;
+            if (cx < 0 || cy < 0 || cx > vw || cy > vh) return;
+            const topEl = elementFromPoint(cx, cy);
+            if (!topEl || !(el === topEl || el.contains(topEl))) return;
+
+            const tag = el.tagName.toLowerCase();
+            const type = el.getAttribute('type') || '';
+            const id = el.id ? `#${el.id}` : '';
+            const name = el.getAttribute('name') ? `[name="${el.getAttribute('name')}"]` : '';
+            const testId = el.getAttribute('data-testid') ? `[data-testid="${el.getAttribute('data-testid')}"]` : '';
+            const placeholder = el.getAttribute('placeholder') ? `(placeholder: "${el.getAttribute('placeholder')}")` : '';
+            const label = (el.labels?.[0]?.textContent || el.getAttribute('aria-label') || el.innerText || el.value || '').trim().replace(/\s+/g, ' ').slice(0, 50);
+
+            let selector = id || testId || (name ? `${tag}${name}` : '');
+            if (!selector && el.className && typeof el.className === 'string') {
+              const cleanClasses = el.className.split(' ').filter(c => c && !c.startsWith('__qa') && !c.includes(':')).slice(0, 2).join('.');
+              if (cleanClasses) selector = `${tag}.${cleanClasses}`;
+            }
+            if (!selector) {
+              if (label && ['button', 'a', 'h1', 'h2', 'h3', 'h4', 'span'].includes(tag)) {
+                selector = `${tag}:has-text("${label.slice(0, 25)}")`;
+              } else {
+                // Icon-only elements (e.g. a search/menu icon button) have no
+                // text/aria-label to key off. A bare tag name (e.g. "button")
+                // would match every button on the page - build a precise
+                // nth-of-type structural path instead so it stays unique.
+                const rootBody = root.body || root.host || null;
+                let path = [];
+                let node = el;
+                for (let depth = 0; depth < 4 && node && node.nodeType === 1 && node !== rootBody; depth++) {
+                  let part = node.tagName.toLowerCase();
+                  const parent = node.parentElement;
+                  if (parent) {
+                    const sameTagSiblings = Array.from(parent.children).filter(c => c.tagName === node.tagName);
+                    if (sameTagSiblings.length > 1) part += `:nth-of-type(${sameTagSiblings.indexOf(node) + 1})`;
+                  }
+                  path.unshift(part);
+                  node = parent;
+                }
+                selector = path.join(' > ') || tag;
+              }
+            }
+
+            if (label || id || testId || name || placeholder) {
+              interactiveCount++;
+              const inPopup = Boolean(el.closest(POPUP_SELECTOR_QC)) ? ' [IN POPUP]' : '';
+              // A disabled Register/Submit button (often gated behind an unchecked
+              // consent checkbox or an unfilled field) is a common source of "the
+              // click did nothing" - surface it so the AI does not just retry blindly.
+              const disabledNote = (el.disabled || el.getAttribute('aria-disabled') === 'true') ? ' [DISABLED]' : '';
+              const checkNote = (tag === 'input' && (type === 'checkbox' || type === 'radio')) ? (el.checked ? ' [CHECKED]' : ' [UNCHECKED]') : '';
+              interactiveList.push(`- <${tag}${type ? ` type="${type}"` : ''}> "${label}" ${placeholder}${inPopup}${disabledNote}${checkNote}${frameNote} ➔ Selector: "${selector}"`);
+            }
+          });
+
+          if (interactiveCount > 200) return;
+          const all = root.querySelectorAll ? root.querySelectorAll('*') : [];
+          for (const node of all) {
+            if (interactiveCount > 200) break;
+            if (node.shadowRoot) scanInteractiveRoot(node.shadowRoot, vw, vh, frameNote);
+            if (node.tagName === 'IFRAME') {
+              try {
+                const frect = node.getBoundingClientRect();
+                if (frect.width === 0 || frect.height === 0) continue;
+                const fcx = frect.x + frect.width / 2;
+                const fcy = frect.y + frect.height / 2;
+                if (fcx < 0 || fcy < 0 || fcx > vw || fcy > vh) continue;
+                const topAtFrame = elementFromPoint(fcx, fcy);
+                if (!topAtFrame || !(topAtFrame === node || node.contains(topAtFrame))) continue;
+                const frameDoc = node.contentDocument;
+                const frameWin = node.contentWindow;
+                if (frameDoc && frameWin && iframeScanCount < 5) {
+                  iframeScanCount++;
+                  scanInteractiveRoot(frameDoc, frameWin.innerWidth, frameWin.innerHeight, ' [DALAM IFRAME]');
+                }
+              } catch (err) { /* cross-origin iframe - inaccessible, skip */ }
             }
           }
-
-          if (label || id || testId || name || placeholder) {
-            interactiveList.push(`- <${tag}${type ? ` type="${type}"` : ''}> "${label}" ${placeholder} ➔ Selector: "${selector}"`);
-          }
-        });
+        }
+        scanInteractiveRoot(document, window.innerWidth, window.innerHeight, '');
 
         const clonedBody = document.body.cloneNode(true);
-        const elementsToRemove = clonedBody.querySelectorAll('script, style, svg, path, link, meta, noscript, iframe');
+        const elementsToRemove = clonedBody.querySelectorAll('script, style, svg, path, link, meta, noscript');
         elementsToRemove.forEach(el => el.remove());
         let htmlContent = clonedBody.innerHTML;
         htmlContent = htmlContent.replace(/\s+/g, ' ').replace(/>\s+</g, '><').trim();
@@ -256,11 +330,23 @@
         ? { success: true, duration: Math.round(performance.now() - startTime) }
         : { success: false, error: `Teks "${value}" tidak muncul di halaman`, duration: Math.round(performance.now() - startTime) };
     }
+    // press without a selector targets whatever currently has focus (e.g. a search
+    // box the agent just filled) - common pattern for search boxes submitted via
+    // Enter instead of a dedicated "Cari" button.
+    if (action === 'press' && !selector) {
+      const el = document.activeElement;
+      if (!el || el === document.body) {
+        return { success: false, error: 'Tidak ada elemen fokus untuk menerima keyboard', duration: Math.round(performance.now() - startTime) };
+      }
+      triggerKeyPress(el, value || 'Enter');
+      await applyAdaptiveWait(step.smart?.autoWait, Math.max(250, Math.min(60000, parseInt(step.timeout, 10) || 5000)));
+      return { success: true, duration: Math.round(performance.now() - startTime) };
+    }
 
     // Standard element-based actions dengan smart wait dan locator fallback.
     const candidates = [selector, ...(Array.isArray(step.fallbackSelectors) ? step.fallbackSelectors : [])].filter(Boolean);
     const timeout = Math.max(250, Math.min(60000, parseInt(step.timeout, 10) || 5000));
-    const requiresActionable = ['click', 'fill', 'select'].includes(action);
+    const requiresActionable = ['click', 'fill', 'select', 'press'].includes(action);
     const resolved = await waitForAnyElement(candidates, timeout, requiresActionable);
     const el = resolved?.element;
 
@@ -288,6 +374,16 @@
         case 'fill': triggerInputFill(el, typeof QADataGenerator !== 'undefined' ? QADataGenerator.interpolate(value) : value); break;
         case 'select': triggerSelect(el, value); break;
         case 'hover': triggerHover(el); break;
+        case 'press':
+          triggerKeyPress(el, value || 'Enter');
+          // Enter commonly submits a form (async on SPA sites) - settle the
+          // same way 'click' does instead of a blind fixed delay.
+          await applyAdaptiveWait(step.smart?.autoWait, timeout);
+          break;
+        case 'read': {
+          const text = (el.innerText || el.textContent || '').trim().slice(0, 2000);
+          return { success: true, actual: text, duration: Math.round(performance.now() - startTime) };
+        }
         case 'assert_visible':
           if (!isElementVisible(el)) return { success: false, error: `Elemen "${selector}" ada di DOM tapi hidden`, duration: Math.round(performance.now() - startTime) };
           break;
@@ -488,12 +584,48 @@
   // ========================================
   function triggerClick(el) {
     el.focus();
-    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+    el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+    el.click();
   }
 
   function triggerHover(el) {
     el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, cancelable: true, view: window }));
     el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, cancelable: true, view: window }));
+  }
+
+  // Common key name aliases so the AI can say "Enter"/"enter"/"Return" interchangeably.
+  const KEY_ALIASES = { enter: 'Enter', return: 'Enter', tab: 'Tab', escape: 'Escape', esc: 'Escape', space: ' ', arrowdown: 'ArrowDown', arrowup: 'ArrowUp' };
+
+  function triggerKeyPress(el, keyName) {
+    const key = KEY_ALIASES[String(keyName || '').toLowerCase()] || keyName || 'Enter';
+    const code = key.length === 1 ? `Key${key.toUpperCase()}` : key;
+    el.focus();
+    const opts = { bubbles: true, cancelable: true, key, code, keyCode: key === 'Enter' ? 13 : undefined };
+    el.dispatchEvent(new KeyboardEvent('keydown', opts));
+    el.dispatchEvent(new KeyboardEvent('keypress', opts));
+    // Enter on a form field commonly submits the closest form even when nothing
+    // called preventDefault - mirror that so search boxes with no visible
+    // "Cari"/submit button still trigger their search on Enter.
+    if (key === 'Enter') {
+      const form = el.form || el.closest?.('form');
+      if (form && typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+      } else {
+        // Many register/login popups are built with plain <div>s instead of a
+        // real <form>, so there is no requestSubmit() to call and the site's own
+        // JS may only listen for a button click, not a keydown - without this,
+        // "press Enter" would silently do nothing inside such a popup. Mimic the
+        // browser's implicit-submit-on-Enter behavior by finding the nearest
+        // submit-looking button in the same dialog/section and clicking it too.
+        const container = el.closest('[role="dialog"], [role="alertdialog"], [aria-modal="true"], .modal, .modal-dialog, .modal-content, .popup, .popover, .dialog, [data-modal], [data-dialog], .drawer, [class*="modal" i], [class*="dialog" i], [class*="popup" i], [class*="overlay" i], fieldset, section')
+          || el.closest('div')?.parentElement
+          || el.parentElement;
+        const submitBtn = container?.querySelector('button[type="submit"], input[type="submit"], button:not([type="button"]):not([type="reset"])');
+        if (submitBtn && submitBtn !== el) triggerClick(submitBtn);
+      }
+    }
+    el.dispatchEvent(new KeyboardEvent('keyup', opts));
   }
 
   function triggerInputFill(el, text) {
@@ -527,6 +659,29 @@
     return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetWidth > 0 && el.offsetHeight > 0;
   }
 
+  // The DOM-visibility logic lives in shared/dom-elements.js (injected before
+  // this script) so it is unit-testable in Node. The inline copies below are a
+  // defensive fallback for environments where __QADom is missing.
+  function domEnv() {
+    return { document, innerWidth: window.innerWidth, innerHeight: window.innerHeight };
+  }
+
+  // True when the element is the topmost thing at its center point — i.e. a
+  // real user's click there would hit this element, not a modal/overlay or a
+  // covered element behind it.
+  function isTopmostAtCenter(el) {
+    const helper = window.__QADom;
+    if (helper) return helper.isTopmostAtCenter(domEnv(), el);
+    if (!el) return false;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return false;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    if (cx < 0 || cy < 0 || cx > window.innerWidth || cy > window.innerHeight) return false;
+    const topEl = document.elementFromPoint(cx, cy);
+    return Boolean(topEl && (topEl === el || el.contains(topEl)));
+  }
+
   function isElementEnabled(el) {
     return !el.disabled && el.getAttribute('aria-disabled') !== 'true' && !el.closest('[inert]');
   }
@@ -543,9 +698,19 @@
         try {
           const elements = root.querySelectorAll(tag);
           const searchLower = searchText.trim().toLowerCase();
+          const matches = [];
           for (const el of elements) {
             const txt = (el.innerText || el.textContent || '').toLowerCase();
-            if (txt.includes(searchLower)) return el;
+            if (txt.includes(searchLower)) matches.push(el);
+          }
+          if (matches.length) {
+            // Prefer the match a real user would actually click: one that is
+            // visible and on top at its center. A "Register" button hidden
+            // behind a popup/modal must never shadow the one inside the popup.
+            if (window.__QADom) return window.__QADom.preferTopmostMatch(domEnv(), matches, isElementVisible);
+            return matches.find(el => isTopmostAtCenter(el))
+              || matches.find(isElementVisible)
+              || matches[0];
           }
         } catch (e) {}
       }
