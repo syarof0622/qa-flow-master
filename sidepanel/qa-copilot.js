@@ -112,13 +112,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       const nameMap = { gemini: 'Gemini', deepseek: 'DeepSeek', claude: 'Claude' };
       const providerName = nameMap[providerKey] || settings.provider;
       const logoSvg = providerLogos[providerKey] || '✨';
-      copilotProviderBadge.innerHTML = `${logoSvg}<span>${escapeHTML(providerName)}</span>`;
+      copilotProviderBadge.innerHTML = logoSvg;
+      copilotProviderBadge.title = `AI: ${providerName} — klik untuk Pengaturan AI`;
+      copilotProviderBadge.setAttribute('aria-label', `AI aktif: ${providerName}, klik untuk Pengaturan AI`);
       copilotProviderBadge.style.color = 'var(--text-main)';
       copilotProviderBadge.style.borderColor = 'rgba(56, 189, 248, 0.3)';
       copilotProviderBadge.style.background = 'rgba(56, 189, 248, 0.12)';
     } else {
       const warnSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
-      copilotProviderBadge.innerHTML = `${warnSvg}<span>Set Key</span>`;
+      copilotProviderBadge.innerHTML = warnSvg;
+      copilotProviderBadge.title = 'API key AI belum diatur — klik untuk Pengaturan AI';
+      copilotProviderBadge.setAttribute('aria-label', 'API key AI belum diatur, klik untuk Pengaturan AI');
       copilotProviderBadge.style.color = 'var(--accent-warning)';
       copilotProviderBadge.style.borderColor = 'rgba(251, 191, 36, 0.3)';
       copilotProviderBadge.style.background = 'rgba(251, 191, 36, 0.12)';
@@ -224,6 +228,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   let isAiGenerating = false;
 
   async function initCopilotThreads() {
+    // A STATE_CHANGED broadcast fires for almost any app action (not just
+    // copilot ones) and would otherwise re-fetch and REPLACE the in-memory
+    // copilotThreads array/objects here. If that happens while a message is
+    // being sent, the send handler's own thread object (already mutated with
+    // the user's new message, not yet reflected in storage) gets silently
+    // swapped out - the next reply then gets appended to a stale copy and the
+    // user's message is lost once anything re-renders. Skip the whole
+    // refresh while a response is in flight; the save at the end of that
+    // cycle triggers its own STATE_CHANGED once it's safe to refresh.
+    if (isAiGenerating) return;
     // Merge the local cache with the background state (dedupe by id, prefer the
     // version with more messages) so threads survive a background/cloud reset.
     const localStore = await chrome.storage.local.get(['qa_copilot_threads', 'qa_active_copilot_thread_id']).catch(() => ({}));
@@ -245,9 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.storage.local.set({ qa_copilot_threads: copilotThreads, qa_active_copilot_thread_id: activeThreadId });
     
     renderThreadSelector();
-    if (!isAiGenerating) {
-      loadActiveThread();
-    }
+    loadActiveThread();
     updateProviderBadge();
   }
 
@@ -690,9 +702,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       copilotThreads.unshift(currentThread);
       activeThreadId = currentThread.id;
     }
-    // Pin the target thread for this request so a mid-generation UI change can
-    // never redirect the AI response into another thread.
-    const targetThreadId = currentThread.id;
+    // currentThread (captured above) is reused directly by every branch below
+    // instead of being re-looked-up via copilotThreads.find() - a background
+    // STATE_CHANGED refresh mid-generation can replace the copilotThreads
+    // array wholesale, and re-searching it would silently swap in a stale
+    // copy that doesn't have the message just pushed onto this object.
 
     // Plan Mode: was the LAST assistant message (before this new user reply)
     // a proposed plan still awaiting confirmation? Captured BEFORE the new
@@ -776,9 +790,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         thinkingMsgEl = appendCopilotMsg(typingHtml, 'system', false);
         try {
           let planHistoryTurns = [];
-          const planThreadObj = copilotThreads.find(t => t.id === targetThreadId);
-          if (planThreadObj && Array.isArray(planThreadObj.messages) && planThreadObj.messages.length > 1) {
-            planHistoryTurns = planThreadObj.messages.slice(0, -1).slice(-10).map(m => ({
+          if (currentThread && Array.isArray(currentThread.messages) && currentThread.messages.length > 1) {
+            planHistoryTurns = currentThread.messages.slice(0, -1).slice(-10).map(m => ({
               role: m.sender === 'user' ? 'user' : 'assistant',
               text: (m.cleanReply || m.text || '').trim()
             })).filter(h => h.text.length > 0);
@@ -796,9 +809,14 @@ ${window.QAFlow?.formattingRules || ''}`;
           const planReply = await ai.sendPrompt(planSystemPrompt, displayUserText, null, [], planHistoryTurns);
           thinkingMsgEl?.remove();
           thinkingMsgEl = null;
-          let planThread = copilotThreads.find(t => t.id === targetThreadId);
-          if (planThread) {
-            planThread.messages.push({
+          // Reuse the SAME in-memory thread object the user's message was
+          // pushed onto above - re-looking it up via copilotThreads.find()
+          // here would risk picking up a stale copy if a background
+          // STATE_CHANGED broadcast raced in and replaced the copilotThreads
+          // array mid-generation, silently dropping the user's message that
+          // only ever lived on the original object.
+          if (currentThread) {
+            currentThread.messages.push({
               id: `msg_${Date.now()}`,
               sender: 'system',
               text: planReply,
@@ -806,10 +824,10 @@ ${window.QAFlow?.formattingRules || ''}`;
               planPending: true,
               timestamp: new Date().toISOString()
             });
-            planThread.updatedAt = new Date().toISOString();
+            currentThread.updatedAt = new Date().toISOString();
             chrome.storage.local.set({ qa_copilot_threads: copilotThreads, qa_active_copilot_thread_id: activeThreadId });
             window.QAFlow.sendRuntimeMessage('SYNC_COPILOT_THREADS', { threads: copilotThreads, activeId: activeThreadId });
-            window.QAFlow.sendRuntimeMessage('SAVE_COPILOT_THREAD', { thread: planThread });
+            window.QAFlow.sendRuntimeMessage('SAVE_COPILOT_THREAD', { thread: currentThread });
             renderThreadSelector();
           }
           appendCopilotMsg(planReply, 'system');
@@ -869,7 +887,9 @@ ${window.QAFlow?.formattingRules || ''}`;
           ? `\n\n---\n\n${isEn ? `## 🐞 ${agentBugReports.length} Bug Report(s) Found` : `## 🐞 ${agentBugReports.length} Laporan Bug Ditemukan`}\n\n${agentBugReports.map(b => b.draft).join('\n\n---\n\n')}`
           : '';
         const cleanReply = baseReply + bugSection;
-        let currentThread = copilotThreads.find(t => t.id === targetThreadId);
+        // Reuse the same in-memory thread object the user's message was
+        // pushed onto - see the note above the Plan Mode branch for why a
+        // fresh copilotThreads.find() here is unsafe.
         if (currentThread) {
           currentThread.messages.push({
             id: `msg_${Date.now()}`,
@@ -1039,9 +1059,8 @@ ${domRes.interactiveSummary || ''}${logSummary}`;
 
       // Include previous thread conversation history for context awareness
       let historyTurns = [];
-      const activeThreadObj = copilotThreads.find(t => t.id === targetThreadId);
-      if (activeThreadObj && Array.isArray(activeThreadObj.messages) && activeThreadObj.messages.length > 1) {
-        const pastMsgs = activeThreadObj.messages.slice(0, -1).slice(-10);
+      if (currentThread && Array.isArray(currentThread.messages) && currentThread.messages.length > 1) {
+        const pastMsgs = currentThread.messages.slice(0, -1).slice(-10);
         historyTurns = pastMsgs.map(m => ({
           role: m.sender === 'user' ? 'user' : 'assistant',
           text: (m.cleanReply || m.text || '').trim()
@@ -1199,7 +1218,9 @@ Skenario tes telah dibuat:
           cleanReply = isEn ? 'AI generated test scenario for this page:' : 'AI berhasil membuat skenario uji untuk halaman ini:';
         }
 
-        let currentThread = copilotThreads.find(t => t.id === targetThreadId);
+        // Reuse the same in-memory thread object the user's message was
+        // pushed onto - see the note above the Plan Mode branch for why a
+        // fresh copilotThreads.find() here is unsafe.
         if (currentThread) {
           currentThread.messages.push({
             id: `msg_${Date.now()}`,
@@ -1219,7 +1240,9 @@ Skenario tes telah dibuat:
         appendCopilotStepCardMsg(cleanReply, steps, false);
 
       } else {
-        let currentThread = copilotThreads.find(t => t.id === targetThreadId);
+        // Reuse the same in-memory thread object the user's message was
+        // pushed onto - see the note above the Plan Mode branch for why a
+        // fresh copilotThreads.find() here is unsafe.
         if (currentThread) {
           currentThread.messages.push({
             id: `msg_${Date.now()}`,

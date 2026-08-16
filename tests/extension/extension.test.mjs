@@ -388,6 +388,75 @@ test('plan mode discusses first and only generates steps after explicit confirma
   } finally { await context.close(); }
 });
 
+test('copilot chat does not lose a message when a background state refresh races a reply', async () => {
+  const extensionPath = path.resolve('.');
+  const context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+  try {
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const page = await context.newPage();
+    await page.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    await page.getByText('PRO v4.4').waitFor();
+
+    await page.evaluate(() => chrome.storage.local.set({
+      qa_ai_settings: { provider: 'gemini', model: 'gemini-2.0-flash', apiKey: 'TEST_KEY' }
+    }));
+
+    // Turn 1 resolves immediately; turn 2's fetch is held open until the test
+    // explicitly releases it, so an unrelated background broadcast can be
+    // injected mid-flight - reproducing the reported bug where a second
+    // message vanished once the agent replied.
+    await page.evaluate(() => {
+      let calls = 0;
+      window.__releaseSecondReply = null;
+      window.fetch = async (url) => {
+        if (!String(url).includes('generativelanguage')) return { ok: false, status: 404, statusText: 'nf', json: async () => ({}) };
+        calls += 1;
+        if (calls === 1) {
+          return { ok: true, status: 200, statusText: 'OK', json: async () => ({ candidates: [{ content: { parts: [{ text: 'Halo! Ada yang bisa saya bantu?' }] } }] }) };
+        }
+        await new Promise(resolve => { window.__releaseSecondReply = resolve; });
+        return { ok: true, status: 200, statusText: 'OK', json: async () => ({ candidates: [{ content: { parts: [{ text: 'Baik, ini jawaban kedua saya.' }] } }] }) };
+      };
+    });
+
+    await page.locator('#tab-btn-copilot').click();
+    await page.locator('#copilotInput').fill('Halo');
+    await page.locator('#btnSendCopilot').click();
+    await page.getByText('Ada yang bisa saya bantu').waitFor({ timeout: 15000 });
+
+    // Second message: send, then - while its reply is deliberately held back -
+    // fire a genuine unrelated background action (saving a dataset). Saving
+    // anything broadcasts STATE_CHANGED to the sidepanel, which used to
+    // re-fetch and replace the in-memory thread array mid-generation.
+    await page.locator('#copilotInput').fill('Ini pesan kedua saya');
+    await page.locator('#btnSendCopilot').click();
+    await page.waitForFunction(() => typeof window.__releaseSecondReply === 'function', null, { timeout: 15000 });
+    await page.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'SAVE_DATASET',
+      payload: { dataset: { name: 'Unrelated Background Action', rows: [{ x: 1 }] } }
+    }, resolve)));
+    // Give the STATE_CHANGED broadcast time to actually reach and be handled
+    // by the sidepanel's message listener before releasing the held reply.
+    await page.waitForTimeout(300);
+    await page.evaluate(() => window.__releaseSecondReply());
+    await page.getByText('Baik, ini jawaban kedua saya').waitFor({ timeout: 15000 });
+
+    // Both user messages must still be visible in the chat, in order. Checking
+    // the innermost bubble text (rather than a bare getByText) avoids matching
+    // the same string on nested wrapper elements too.
+    const userBubbles = await page.locator('.copilot-msg.user .msg-bubble').allTextContents();
+    assert.deepEqual(userBubbles, ['Halo', 'Ini pesan kedua saya'], 'Both user messages must remain visible, in order');
+
+    // ...and all four messages must be persisted, not rendered from a stale copy.
+    const stored = await page.evaluate(() => new Promise(resolve => chrome.storage.local.get('qa_copilot_threads', res => resolve(res.qa_copilot_threads || []))));
+    const messages = stored[0]?.messages || [];
+    assert.equal(messages.length, 4, 'Both user messages and both replies must be persisted');
+    assert.equal(messages.filter(m => m.sender === 'user').length, 2);
+  } finally { await context.close(); }
+});
+
 test('ai sharing agent drives the live page and produces steps', async () => {
   const server = createServer((request, response) => {
     if (request.url === '/login') {
@@ -989,6 +1058,131 @@ test('bulk data-entry resumes an interrupted batch instead of redoing already-co
   }
 });
 
+test('bulk data-entry stays correct at real-world scale and keeps continue-on-error semantics', async () => {
+  const server = createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'text/html' });
+    response.end('<!doctype html><title>Scale Fixture</title><input id="name">' +
+      '<button id="save" type="button" onclick="document.getElementById(\'result\').textContent=\'Saved: \'+document.getElementById(\'name\').value">Save</button>' +
+      '<div id="result"></div>' +
+      '<button id="reset" type="button" onclick="document.getElementById(\'name\').value=\'\';document.getElementById(\'result\').textContent=\'\'">Isi Lagi</button>');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const extensionPath = path.resolve('.');
+  let context;
+  try {
+    context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    await sidepanel.getByText('PRO v4.4').waitFor();
+    const target = await context.newPage();
+    await target.goto(baseUrl + '/');
+    await target.bringToFront();
+
+    const authored = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'UPDATE_STEPS',
+      payload: { steps: [
+        { action: 'fill', selector: '#name', value: '{{name}}', description: 'Isi nama' },
+        { action: 'click', selector: '#save', description: 'Klik simpan' },
+        { action: 'assert_text', selector: '#result', value: '{{expected}}', description: 'Verifikasi hasil tersimpan' },
+        { action: 'click', selector: '#reset', description: 'Buka form lagi untuk baris berikutnya' }
+      ] }
+    }, resolve)));
+    assert.equal(authored.status, 'SUCCESS');
+
+    // 40 rows is an order of magnitude past the toy 3-row case above - large
+    // enough to prove continue-on-error and progress reporting hold up past a
+    // handful of rows, with 2 deliberate failures scattered through the batch
+    // (not just at the edges) to prove the whole run is scanned, not just the
+    // first/last row.
+    const ROW_COUNT = 40;
+    const FAILING_INDICES = [9, 29]; // 0-based -> displayed as "Baris 10" / "Baris 30"
+    const rows = Array.from({ length: ROW_COUNT }, (_, i) => ({
+      name: `Baris${i + 1}`,
+      expected: FAILING_INDICES.includes(i) ? 'Saved: SALAH' : `Saved: Baris${i + 1}`
+    }));
+    const saved = await sidepanel.evaluate((rows) => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'SAVE_DATASET',
+      payload: { dataset: { name: 'Bulk Scale Data', rows } }
+    }, resolve)), rows);
+    assert.equal(saved.status, 'SUCCESS');
+
+    // Speed up the per-step delay for this larger batch - a real user running
+    // hundreds of rows would do the same. Correctness must hold regardless of
+    // delay; only wall-clock time changes.
+    await sidepanel.evaluate(() => { document.getElementById('stepDelayInput').value = '30'; });
+
+    await sidepanel.waitForFunction(() => !document.getElementById('btnRunAllRows')?.classList.contains('hidden'), null, { timeout: 10000 });
+    await sidepanel.evaluate(() => document.getElementById('btnRunAllRows').click());
+    await sidepanel.waitForFunction(() => !document.getElementById('bentoModalOverlay')?.classList.contains('hidden'), null, { timeout: 10000 });
+    const confirmMessage = await sidepanel.evaluate(() => document.getElementById('bentoModalMessage')?.textContent || '');
+    assert.match(confirmMessage, /40 baris dataset/);
+    await sidepanel.evaluate(() => document.getElementById('bentoModalConfirmBtn').click());
+
+    // Progress must advance through the batch (any row count out of 40).
+    await sidepanel.waitForFunction((count) => new RegExp(`Baris \\d{1,3}\\/${count}`).test(document.getElementById('bannerDetail')?.textContent || ''), ROW_COUNT, { timeout: 15000 });
+
+    // Real per-step overhead (scripting round-trips, retries) dominates over
+    // the 30ms artificial delay - measured at ~67s for 40 rows locally, so
+    // this leaves comfortable headroom for a loaded CI runner.
+    await sidepanel.waitForFunction(() => /baris gagal/.test(document.getElementById('bentoModalMessage')?.textContent || ''), null, { timeout: 120000 });
+    const summaryText = await sidepanel.evaluate(() => document.getElementById('bentoModalMessage')?.textContent || '');
+    assert.match(summaryText, /38 baris sukses, 2 baris gagal dari 40 diproses/);
+    assert.match(summaryText, /Baris 10:/);
+    assert.match(summaryText, /Baris 30:/);
+    await sidepanel.evaluate(() => document.getElementById('bentoModalCancelBtn').click());
+
+    await sidepanel.waitForFunction(() => document.getElementById('btnRunAllRows')?.disabled === false, null, { timeout: 10000 });
+    const checkpointAfterFinish = await sidepanel.evaluate(() => new Promise(resolve => chrome.storage.local.get('qa_bulk_run_checkpoint', res => resolve(res?.qa_bulk_run_checkpoint || null))));
+    assert.equal(checkpointAfterFinish, null);
+  } finally {
+    await context?.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
+test('dataset selector collapses large imports into one option instead of freezing the dropdown', async () => {
+  const extensionPath = path.resolve('.');
+  const context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+  try {
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    await sidepanel.getByText('PRO v4.4').waitFor();
+
+    // 250 rows is past the MAX_PER_ROW_OPTIONS=200 threshold that used to
+    // create one <option> per row and freeze the dropdown for large imports.
+    const ROW_COUNT = 250;
+    const rows = Array.from({ length: ROW_COUNT }, (_, i) => ({ name: `Row${i + 1}` }));
+    const saved = await sidepanel.evaluate((rows) => new Promise(resolve => chrome.runtime.sendMessage({
+      action: 'SAVE_DATASET',
+      payload: { dataset: { name: 'Import Besar', rows } }
+    }, resolve)), rows);
+    assert.equal(saved.status, 'SUCCESS');
+
+    await sidepanel.locator('#tab-btn-presets').click();
+    // <option> elements inside a <select> never satisfy Playwright's
+    // "visible" actionability check even when genuinely present in the DOM -
+    // poll the plain DOM instead of using a visibility-based locator wait.
+    await sidepanel.waitForFunction(() => Array.from(document.querySelectorAll('#datasetSelector option')).some(o => o.textContent.includes('Import Besar')), null, { timeout: 10000 });
+
+    // A 250-row import must collapse to ONE <option>, not 250.
+    const options = await sidepanel.locator('#datasetSelector option').allTextContents();
+    const matching = options.filter(text => text.includes('Import Besar'));
+    assert.equal(matching.length, 1, 'A large dataset must collapse to a single summary option, not one option per row');
+    assert.equal(matching[0].trim(), 'Import Besar · 250 baris');
+
+    // Saving a dataset makes it active automatically - the bulk-run button
+    // must already be visible without any extra selection step.
+    await sidepanel.waitForFunction(() => !document.getElementById('btnRunAllRows')?.classList.contains('hidden'), null, { timeout: 10000 });
+  } finally { await context.close(); }
+});
+
 test('bug exporter modal renders and exports a report to slack', async () => {
   const extensionPath = path.resolve('.');
   const context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
@@ -1139,6 +1333,114 @@ test('governance sign-off opens from the extracted module', async () => {
     await sidepanel.locator('#qaWorkspaceBody input[name="release"]').waitFor({ timeout: 10000 });
     await sidepanel.locator('#qaWorkspaceBody input[name="approver"]').waitFor();
     assert.equal(await sidepanel.locator('#qaWorkspaceBody select[name="approved"] option').count() >= 2, true, 'Decision select populated');
+  } finally { await context.close(); }
+});
+
+test('QA Readiness: requirement traceability and defect lifecycle persist end-to-end', async () => {
+  const extensionPath = path.resolve('.');
+  const context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+  try {
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    await sidepanel.getByText('PRO v4.4').waitFor();
+
+    // Add a requirement.
+    await sidepanel.locator('#tab-btn-reports').click();
+    await sidepanel.locator('#btnQaGovernanceMenu').click();
+    await sidepanel.locator('#btnRequirements').click();
+    await sidepanel.locator('#qaAddRequirement').click();
+    await sidepanel.locator('#qaWorkspaceBody input[name="id"]').fill('REQ-LOGIN-001');
+    await sidepanel.locator('#qaWorkspaceBody select[name="risk"]').selectOption('HIGH');
+    await sidepanel.locator('#qaWorkspaceBody input[name="title"]').fill('User can log in with valid credentials');
+    await sidepanel.locator('.qa-entity-form [type="submit"]').click();
+    // Saving re-renders the requirement manager list in place (the overlay stays open).
+    await sidepanel.locator('.qa-board-item', { hasText: 'REQ-LOGIN-001' }).waitFor({ timeout: 10000 });
+
+    const afterRequirement = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, resolve)));
+    const suite = afterRequirement.data.suites.find(item => item.id === afterRequirement.data.activeSuiteId);
+    assert.equal(suite.requirements.length, 1);
+    assert.equal(suite.requirements[0].id, 'REQ-LOGIN-001');
+    assert.equal(suite.requirements[0].risk, 'HIGH');
+
+    // Log a defect against that requirement.
+    await sidepanel.locator('#qaWorkspaceClose').click();
+    await sidepanel.locator('#btnQaGovernanceMenu').click();
+    await sidepanel.locator('#btnAddDefect').click();
+    await sidepanel.locator('#qaWorkspaceBody input[name="title"]').fill('Login button stays disabled after valid input');
+    await sidepanel.locator('#qaWorkspaceBody select[name="severity"]').selectOption('CRITICAL');
+    await sidepanel.locator('#qaWorkspaceBody textarea[name="requirementIds"]').fill('REQ-LOGIN-001');
+    await sidepanel.locator('.qa-entity-form [type="submit"]').click();
+
+    // Saving a defect opens the defect board - the new defect must appear there.
+    const boardItem = sidepanel.locator('.qa-board-item', { hasText: 'Login button stays disabled' });
+    await boardItem.waitFor({ timeout: 10000 });
+    const boardItemText = await boardItem.innerText();
+    assert.match(boardItemText, /CRITICAL/);
+    assert.match(boardItemText, /OPEN/);
+    assert.match(boardItemText, /REQ-LOGIN-001/);
+
+    const afterDefect = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, resolve)));
+    const defect = afterDefect.data.defects.find(item => item.requirementIds.includes('REQ-LOGIN-001'));
+    assert.ok(defect, 'Defect must be linked to the requirement in stored state, not just shown in the UI');
+    assert.equal(defect.status, 'OPEN');
+    assert.equal(defect.severity, 'CRITICAL');
+
+    // Close the defect from the board and confirm the lifecycle transition persists.
+    await boardItem.locator('.qa-close-defect').click();
+    await sidepanel.waitForFunction(() => {
+      const items = Array.from(document.querySelectorAll('.qa-board-item'));
+      const match = items.find(el => el.textContent.includes('Login button stays disabled'));
+      return match ? match.textContent.includes('CLOSED') : false;
+    }, null, { timeout: 10000 });
+
+    const finalState = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, resolve)));
+    const closedDefect = finalState.data.defects.find(item => item.id === defect.id);
+    assert.equal(closedDefect.status, 'CLOSED');
+  } finally { await context.close(); }
+});
+
+test('release sign-off enforces the quality gate and records an audited override', async () => {
+  const extensionPath = path.resolve('.');
+  const context = await chromium.launchPersistentContext('', { channel: 'chromium', headless: true, args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`] });
+  try {
+    let worker = context.serviceWorkers()[0];
+    if (!worker) worker = await context.waitForEvent('serviceworker');
+    const extensionId = new URL(worker.url()).host;
+    const sidepanel = await context.newPage();
+    await sidepanel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    await sidepanel.getByText('PRO v4.4').waitFor();
+
+    await sidepanel.locator('#tab-btn-reports').click();
+    await sidepanel.locator('#btnQaGovernanceMenu').click();
+    await sidepanel.locator('#btnReleaseSignoff').click();
+    await sidepanel.locator('#qaWorkspaceBody input[name="release"]').waitFor({ timeout: 10000 });
+
+    await sidepanel.locator('#qaWorkspaceBody input[name="release"]').fill('v4.4.0');
+    await sidepanel.locator('#qaWorkspaceBody input[name="approver"]').fill('Wahid');
+    // No execution history exists yet for this fresh suite, so the "passing
+    // run" gate fails on its own - approving without an override reason must
+    // be rejected client-side rather than silently signed off.
+    await sidepanel.locator('.qa-entity-form [type="submit"]').click();
+    await sidepanel.locator('.qa-form-error:not(.hidden)').waitFor({ timeout: 10000 });
+    assert.match(await sidepanel.locator('.qa-form-error').innerText(), /Quality gate gagal/);
+    assert.equal(await sidepanel.locator('#qaWorkspaceOverlay').isHidden(), false, 'A rejected gate must not close the workspace');
+
+    // Supplying an audited override reason must let it through despite the
+    // failing gate, and both the failure and the reason must be recorded.
+    await sidepanel.locator('#qaWorkspaceBody textarea[name="overrideReason"]').fill('No CI run yet on this fresh suite; manually smoke-tested locally before this release.');
+    await sidepanel.locator('.qa-entity-form [type="submit"]').click();
+    await sidepanel.locator('#qaWorkspaceOverlay').waitFor({ state: 'hidden', timeout: 10000 });
+
+    const state = await sidepanel.evaluate(() => new Promise(resolve => chrome.runtime.sendMessage({ action: 'GET_STATE' }, resolve)));
+    const signoff = state.data.releaseSignoffs[0];
+    assert.equal(signoff.release, 'v4.4.0');
+    assert.equal(signoff.approver, 'Wahid');
+    assert.equal(signoff.approved, true);
+    assert.equal(signoff.gates.passingRun, false);
+    assert.match(signoff.overrideReason, /manually smoke-tested/);
   } finally { await context.close(); }
 });
 

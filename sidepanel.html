@@ -855,19 +855,18 @@
                   points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
               <h3>QA Copilot</h3>
-              <span id="copilotProviderBadge" class="copilot-header-badge" title="Klik untuk Pengaturan AI">AI
-                Ready</span>
+              <span id="copilotProviderBadge" class="copilot-header-badge" title="Klik untuk Pengaturan AI" aria-label="Status AI, klik untuk Pengaturan AI">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /></svg>
+              </span>
             </div>
             <div class="copilot-header-top-actions">
-              <label class="agent-mode-toggle" id="planModeToggleWrap" title="Plan Mode: AI berdiskusi &amp; mengajukan rencana dulu, baru eksekusi setelah kamu konfirmasi" aria-label="Plan Mode: diskusi dulu sebelum eksekusi">
-                <span class="agent-mode-label">Plan</span>
+              <label class="agent-mode-toggle copilot-icon-toggle" id="planModeToggleWrap" title="Plan Mode: AI berdiskusi &amp; mengajukan rencana dulu, baru eksekusi setelah kamu konfirmasi" aria-label="Plan Mode: diskusi dulu sebelum eksekusi">
                 <input type="checkbox" id="planModeToggle" class="agent-mode-checkbox">
-                <span class="agent-mode-switch" aria-hidden="true"></span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
               </label>
-              <label class="agent-mode-toggle" id="agentModeToggleWrap" title="AI Sharing Agent" aria-label="AI Sharing Agent: jelajahi halaman otomatis">
-                <span class="agent-mode-label">Agent</span>
+              <label class="agent-mode-toggle copilot-icon-toggle" id="agentModeToggleWrap" title="AI Sharing Agent" aria-label="AI Sharing Agent: jelajahi halaman otomatis">
                 <input type="checkbox" id="agentModeToggle" class="agent-mode-checkbox">
-                <span class="agent-mode-switch" aria-hidden="true"></span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /><path d="M5 3v4M19 17v4M3 5h4M17 19h4" /></svg>
               </label>
               <button id="btnOpenAiSettingsDirect" class="bento-icon-btn" title="Pengaturan AI (API Key)">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
